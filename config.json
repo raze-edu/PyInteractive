@@ -1,0 +1,40 @@
+{
+  "size": [
+    1920,
+    1080
+  ],
+  "displaymode": "FULLSCREEN",
+  "fps": 60,
+  "colortheme": {
+    "background": [
+      30,
+      30,
+      35,
+      255
+    ],
+    "primary": [
+      0,
+      150,
+      255,
+      255
+    ],
+    "secondary": [
+      240,
+      240,
+      240,
+      255
+    ],
+    "accent": [
+      255,
+      65,
+      54,
+      255
+    ],
+    "object_color": [
+      46,
+      204,
+      113,
+      255
+    ]
+  }
+}
