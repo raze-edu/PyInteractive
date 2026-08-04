@@ -4,7 +4,6 @@ from .wheel import VerticalWheel
 
 class MultiWheelCounter:
     """A horizontal collection of connected VerticalWheel objects that forms a counter.
-    
     The wheels are ordered right-to-left (wheel 0 is rightmost).
     Rotations are connected: wrapping forward triggers a carry to the left neighbor,
     while wrapping backward triggers a borrow from the right neighbor.

@@ -232,7 +232,6 @@ class Slider:
 
     def draw(self, screen: pygame.Surface, app: "PygameApp") -> None:
         """Renders the slider track, progress line, and handle.
-        
         Args:
             screen: Pygame Surface to render onto.
             app: The PygameApp instance providing colors.

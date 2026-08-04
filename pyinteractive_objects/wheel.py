@@ -4,7 +4,6 @@ import pygame
 
 class VerticalWheel:
     """A vertical scrolling wheel selector widget for Pygame.
-    
     Displays a list of strings inside a bounded rectangle, projecting them
     on a simulated cylinder. Text labels are auto-scaled to fit inside the slots.
     Supports mouse dragging, mouse wheel, and keyboard arrow key navigation.
