@@ -18,7 +18,8 @@ class FractionSelect:
         pos: Tuple[float, float],
         size: Tuple[float, float],
         length: int,
-        mode: str = "circle"
+        mode: str = "circle",
+        preselected: int = 0
     ):
         """Initializes the FractionSelect widget.
         
