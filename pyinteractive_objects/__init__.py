@@ -2,6 +2,7 @@ from .wheel import VerticalWheel
 from .counter import MultiWheelCounter
 from .inputs import StringInput, Slider
 from .fraction_select import FractionSelect, fraction_select
+from .math_equation import MathEquationRenderer, MathEquationWidget, MathFunction
 
 __all__ = [
     "VerticalWheel",
@@ -10,4 +11,7 @@ __all__ = [
     "Slider",
     "FractionSelect",
     "fraction_select",
+    "MathEquationRenderer",
+    "MathEquationWidget",
+    "MathFunction",
 ]
