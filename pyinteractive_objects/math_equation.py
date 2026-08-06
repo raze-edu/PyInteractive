@@ -7,11 +7,12 @@ class RenderBlock:
     Includes the Pygame Surface containing the rendered graphics, pixel dimensions,
     and the y-offset of the math axis (for alignment).
     """
-    def __init__(self, surface: pygame.Surface, axis: int):
+    def __init__(self, surface: pygame.Surface, axis: int, inserts: Optional[List[Dict[str, Any]]] = None):
         self.surface = surface
         self.width = surface.get_width()
         self.height = surface.get_height()
         self.axis = axis
+        self.inserts = inserts if inserts is not None else []
 
     @classmethod
     def concat(cls, blocks: List["RenderBlock"]) -> "RenderBlock":
@@ -24,6 +25,19 @@ class RenderBlock:
         for block in blocks[1:]:
             result = cls._concat_two(result, block)
         return result
+
+    @classmethod
+    def offset_inserts(cls, block: "RenderBlock", dx: int, dy: int) -> List[Dict[str, Any]]:
+        """Offsets all insert box relative coordinates in a block."""
+        return [{
+            'id': ins['id'],
+            'x': ins['x'] + dx,
+            'y': ins['y'] + dy,
+            'width': ins['width'],
+            'height': ins['height'],
+            'char_width': ins['char_width'],
+            'font_size': ins['font_size']
+        } for ins in block.inserts]
 
     @classmethod
     def _concat_two(cls, A: "RenderBlock", B: "RenderBlock") -> "RenderBlock":
@@ -42,7 +56,10 @@ class RenderBlock:
         surf.blit(A.surface, (0, offset_A))
         surf.blit(B.surface, (A.width, offset_B))
         
-        return cls(surf, res_axis)
+        # Offset and merge inserts
+        new_inserts = cls.offset_inserts(A, 0, offset_A) + cls.offset_inserts(B, A.width, offset_B)
+        
+        return cls(surf, res_axis, new_inserts)
 
 
 class MathFunction:
@@ -117,7 +134,10 @@ class FracFunction(MathFunction):
         # The math axis aligns perfectly with the center of the fraction line
         axis = line_center_y
         
-        return RenderBlock(surf, axis)
+        # Offset and merge inserts
+        inserts = RenderBlock.offset_inserts(T, tx, T_y) + RenderBlock.offset_inserts(B, bx, B_y)
+        
+        return RenderBlock(surf, axis, inserts)
 
 
 class ExpoFunction(MathFunction):
@@ -144,7 +164,7 @@ class ExpoFunction(MathFunction):
         shift = int(parent_ascent * 0.45)
         axis = E.height + shift
         
-        return RenderBlock(E.surface, axis)
+        return RenderBlock(E.surface, axis, E.inserts)
 
 
 class SqrtFunction(MathFunction):
@@ -208,7 +228,57 @@ class SqrtFunction(MathFunction):
             line_thickness
         )
         
-        return RenderBlock(surf, axis)
+        inserts = RenderBlock.offset_inserts(A, root_sign_width + padding_right, spacing_top + line_thickness)
+        
+        return RenderBlock(surf, axis, inserts)
+
+
+class InsertFunction(MathFunction):
+    """Formats a text input field placeholder with character width specified in arg."""
+    def __init__(self):
+        super().__init__("insert", 1)
+
+    def format(
+        self,
+        args: List[List[ASTNode]],
+        renderer: "MathEquationRenderer",
+        font_size: int,
+        color: Tuple[int, int, int]
+    ) -> RenderBlock:
+        arg_text = ""
+        if args and args[0]:
+            for node in args[0]:
+                if isinstance(node, TextNode):
+                    arg_text += node.text
+        try:
+            width_chars = int(arg_text.strip())
+        except ValueError:
+            width_chars = 3
+            
+        font = renderer.get_font(font_size)
+        char_w, _ = font.size(" ")
+        line_h = font.get_linesize()
+        
+        w = char_w * width_chars + 12
+        h = line_h
+        
+        surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        axis = int(font.get_ascent() * 0.65)
+        
+        renderer.insert_counter += 1
+        ins_id = f"insert_{renderer.insert_counter}"
+        
+        inserts = [{
+            'id': ins_id,
+            'x': 0,
+            'y': 0,
+            'width': w,
+            'height': h,
+            'char_width': width_chars,
+            'font_size': font_size
+        }]
+        
+        return RenderBlock(surf, axis, inserts)
 
 
 class ASTNode:
@@ -238,6 +308,8 @@ class MathEquationRenderer:
         self.register_function(FracFunction())
         self.register_function(ExpoFunction())
         self.register_function(SqrtFunction())
+        self.register_function(InsertFunction())
+        self.insert_counter = 0
 
     def register_function(self, func: MathFunction) -> None:
         """Registers a function formatter."""
@@ -370,9 +442,19 @@ class MathEquationRenderer:
                 blocks.append(block)
         return RenderBlock.concat(blocks)
 
+    def render(
+        self,
+        nodes: List[ASTNode],
+        font_size: int,
+        color: Tuple[int, int, int]
+    ) -> RenderBlock:
+        """Top-level render entry point. Resets the insert counter and compiles AST."""
+        self.insert_counter = 0
+        return self.render_nodes(nodes, font_size, color)
+
 
 class MathEquationWidget:
-    """A Pygame UI widget that pre-renders and displays math equations.
+    """A Pygame UI widget that pre-renders and displays math equations with interactive fields.
     
     Conforms to the PyInteractive GameObject protocol.
     """
@@ -395,6 +477,12 @@ class MathEquationWidget:
         self.rect = pygame.Rect(pos, (0, 0))
         self.baseline_y = pos[1]
         
+        # Interactive state
+        self.insert_values: Dict[str, str] = {}
+        self.focused_insert_id: Optional[str] = None
+        self.cursor_visible = True
+        self.cursor_timer = 0.0
+        
         self._cached_color = None
         self._render()
 
@@ -415,7 +503,7 @@ class MathEquationWidget:
         
         try:
             nodes = self.renderer.parse(self._expression)
-            self.render_block = self.renderer.render_nodes(nodes, self.font_size, color)
+            self.render_block = self.renderer.render(nodes, self.font_size, color)
         except Exception as e:
             # Fallback to rendering the error message visually
             font = self.renderer.get_font(self.font_size)
@@ -424,16 +512,89 @@ class MathEquationWidget:
             
         self.rect = pygame.Rect(self.pos, (self.render_block.width, self.render_block.height))
         self.baseline_y = self.pos[1] + self.render_block.axis
+        
+        # Sync values with current layout blocks
+        current_ids = {ins['id'] for ins in self.render_block.inserts}
+        for ins_id in current_ids:
+            if ins_id not in self.insert_values:
+                self.insert_values[ins_id] = ""
+        # Clean up old unused ids
+        for old_id in list(self.insert_values.keys()):
+            if old_id not in current_ids:
+                del self.insert_values[old_id]
+        if self.focused_insert_id not in current_ids:
+            self.focused_insert_id = None
+
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Processes mouse clicks for focus transitions and keypresses for text editing."""
+        if not self.render_block:
+            return
+            
+        # 1. Mouse Click Collision Detection (Focus)
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = getattr(event, "pos", None)
+            if mouse_pos is None:
+                if pygame.display.get_init():
+                    mouse_pos = pygame.mouse.get_pos()
+                else:
+                    mouse_pos = (0, 0)
+                
+            clicked_any = False
+            for ins in self.render_block.inserts:
+                rect = pygame.Rect(
+                    self.pos[0] + ins['x'],
+                    self.pos[1] + ins['y'],
+                    ins['width'],
+                    ins['height']
+                )
+                if rect.collidepoint(mouse_pos):
+                    self.focused_insert_id = ins['id']
+                    self.cursor_visible = True
+                    self.cursor_timer = 0.0
+                    clicked_any = True
+                    break
+            if not clicked_any:
+                self.focused_insert_id = None
+                
+        # 2. Text Input when Focused
+        elif event.type == pygame.KEYDOWN and self.focused_insert_id is not None:
+            active_ins = None
+            for ins in self.render_block.inserts:
+                if ins['id'] == self.focused_insert_id:
+                    active_ins = ins
+                    break
+                    
+            if active_ins:
+                text = self.insert_values.get(self.focused_insert_id, "")
+                if event.key == pygame.K_BACKSPACE:
+                    text = text[:-1]
+                    self.cursor_visible = True
+                    self.cursor_timer = 0.0
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_ESCAPE):
+                    self.focused_insert_id = None
+                else:
+                    if event.unicode and event.unicode.isprintable() and event.unicode != "":
+                        if len(text) < active_ins['char_width']:
+                            text += event.unicode
+                            self.cursor_visible = True
+                            self.cursor_timer = 0.0
+                            
+                self.insert_values[self.focused_insert_id] = text
 
     def update(self, dt: float) -> None:
-        """Satisfies the PyInteractive update signature."""
-        pass
+        """Blinks the active input cursor."""
+        if self.focused_insert_id is not None:
+            self.cursor_timer += dt
+            if self.cursor_timer >= 0.5:
+                self.cursor_timer -= 0.5
+                self.cursor_visible = not self.cursor_visible
+        else:
+            self.cursor_visible = False
 
     def draw(self, screen: pygame.Surface, app: Any) -> None:
-        """Blits the pre-rendered equation surface onto the screen."""
+        """Blits the pre-rendered equation surface and draws active input boxes."""
         target_color = self.color
         if target_color is None:
-            # Pull secondary color from application theme
             if hasattr(app, "get_color"):
                 target_color = app.get_color("secondary", (230, 230, 230, 255))[:3]
             else:
@@ -444,4 +605,53 @@ class MathEquationWidget:
             self._render(target_color)
             
         if self.render_block:
+            # Draw math graphics first
             screen.blit(self.render_block.surface, self.pos)
+            
+            # Fetch application colors for text inputs
+            bg_color = (25, 25, 30, 255)
+            accent_color = (255, 65, 54, 255)
+            primary_color = (0, 150, 255, 255)
+            
+            if hasattr(app, "get_color"):
+                bg_color = app.get_color("wheel_bg", bg_color)
+                accent_color = app.get_color("accent", accent_color)
+                primary_color = app.get_color("primary", primary_color)
+                
+            # Draw each interactive insert box
+            for ins in self.render_block.inserts:
+                ins_id = ins['id']
+                text = self.insert_values.get(ins_id, "")
+                
+                # Absolute coordinates
+                rect = pygame.Rect(
+                    self.pos[0] + ins['x'],
+                    self.pos[1] + ins['y'],
+                    ins['width'],
+                    ins['height']
+                )
+                
+                # Draw field background
+                pygame.draw.rect(screen, bg_color, rect)
+                
+                # Draw border depending on focus
+                if self.focused_insert_id == ins_id:
+                    pygame.draw.rect(screen, primary_color, rect, 2)
+                else:
+                    border_color = (target_color[0] // 2, target_color[1] // 2, target_color[2] // 2, 255)
+                    pygame.draw.rect(screen, border_color, rect, 1)
+                    
+                # Render text inside field
+                font = self.renderer.get_font(ins['font_size'])
+                text_surf = font.render(text, True, target_color)
+                
+                # Align text inside rect (margin-left: 6px, vertically centered)
+                tx = rect.x + 6
+                ty = rect.y + (rect.height - text_surf.get_height()) // 2
+                screen.blit(text_surf, (tx, ty))
+                
+                # Draw blinking cursor if focused
+                if self.focused_insert_id == ins_id and self.cursor_visible:
+                    text_w = font.size(text)[0]
+                    cx = tx + text_w + 1
+                    pygame.draw.line(screen, accent_color, (cx, ty), (cx, ty + text_surf.get_height()), 2)

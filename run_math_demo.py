@@ -18,9 +18,10 @@ def main():
         pos=(260, 200),
         size=(1400, 60),
         max_length=80,
-        placeholder="Type equation, e.g. 3 + !frac{20 + 1}{100}"
+        placeholder="Type equation, e.g. !frac{1}{!insert{3}} = 0.5"
     )
-    equation_input.text = "3 + !frac{20 + 1}{100}"
+    # Default to an interactive equation containing !insert
+    equation_input.text = "!frac{1}{!insert{3}} = 0.5"
     app.add_object(equation_input)
 
     # 2. Create the MathEquationWidget to display the equation
@@ -33,11 +34,14 @@ def main():
     app.add_object(math_widget)
 
     print("\nInstructions:")
-    print("  - Click on the text box to type.")
+    print("  - Click on the top text box to type/change the equation.")
+    print("  - Click inside any rendered input boxes (!insert) to type values directly in the equation!")
     print("  - Supported markup:")
     print("      - !frac{num}{den}  : Creates a fraction layout block.")
+    print("      - !expo{arg}       : Creates a superscript/exponent.")
+    print("      - !sqrt{arg}       : Creates a square root symbol.")
+    print("      - !insert{width}   : Places an interactive text input of specified character width.")
     print("      - \\!, \\{, \\}, \\\\    : Escapes special characters.")
-    print("  - Nested functions are fully supported, e.g., !frac{!frac{1}{2}}{3}.")
     print("  - Press ESC to exit.")
 
     # Custom event handling
@@ -48,8 +52,9 @@ def main():
                 app.is_running = False
                 return
             
-        # Forward events to StringInput
+        # Forward events to both StringInput and MathEquationWidget
         equation_input.handle_event(event)
+        math_widget.handle_event(event)
         original_handle_event(event)
 
     app.handle_event = custom_handle_event
@@ -83,18 +88,18 @@ def main():
         app.screen.blit(title_surf, (int((app.screen.get_width() - title_surf.get_width()) / 2), 40))
 
         # Draw input box label
-        input_label = label_font.render("Equation Input String:", True, secondary_color)
+        input_label = label_font.render("Equation Input String (Define layout here):", True, secondary_color)
         app.screen.blit(input_label, (260, 170))
 
         # Draw rendering output label
-        render_label = label_font.render("Rendered Math Equation:", True, secondary_color)
+        render_label = label_font.render("Rendered Math Equation (Click & type inside boxes below!):", True, secondary_color)
         app.screen.blit(render_label, (260, 330))
 
         # Draw instructions/examples at the bottom
         inst_1 = label_font.render("Examples to copy & paste:", True, primary_color)
-        inst_2 = label_font.render("-  x!expo{2} + y!expo{2} = z!expo{2}", True, secondary_color)
-        inst_3 = label_font.render("-  !sqrt{x!expo{2} + y!expo{2}}", True, secondary_color)
-        inst_4 = label_font.render("-  !frac{-b +- !sqrt{b!expo{2} - 4ac}}{2a}", True, secondary_color)
+        inst_2 = label_font.render("-  !frac{1}{!insert{3}} = 0.5", True, secondary_color)
+        inst_3 = label_font.render("-  !sqrt{x!expo{2} + !insert{2}}", True, secondary_color)
+        inst_4 = label_font.render("-  !frac{-b +- !sqrt{!insert{3} - 4ac}}{2a}", True, secondary_color)
         
         app.screen.blit(inst_1, (260, 720))
         app.screen.blit(inst_2, (260, 760))
