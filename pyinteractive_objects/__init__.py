@@ -3,6 +3,7 @@ from .counter import MultiWheelCounter
 from .inputs import StringInput, Slider
 from .fraction_select import FractionSelect, fraction_select
 from .math_equation import MathEquationRenderer, MathEquationWidget, MathFunction
+from .nodes import ConnectorNode, Connection, InteractiveNode, GlobalInputNode, GlobalOutputNode
 
 __all__ = [
     "VerticalWheel",
@@ -14,4 +15,9 @@ __all__ = [
     "MathEquationRenderer",
     "MathEquationWidget",
     "MathFunction",
+    "ConnectorNode",
+    "Connection",
+    "InteractiveNode",
+    "GlobalInputNode",
+    "GlobalOutputNode",
 ]
