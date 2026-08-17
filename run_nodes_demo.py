@@ -112,27 +112,18 @@ def delete_selected_node(app: PygameApp, node: InteractiveNode):
         # Remove connector nodes linked to this node
         conn.connector_nodes = [c for c in conn.connector_nodes if c.linked_node is not node]
         conn.validate_lines()
-        
-        # If no lines remain, dissolve connection
-        if not conn.lines:
-            for c in conn.connector_nodes:
-                if c.linked_node is not None:
-                    c.linked_node.connection = None
+        conn.split_if_disconnected()
     node.connection = None
 
 def delete_selected_line(app: PygameApp, conn: Connection, line: tuple):
-    """Deletes a line segment, and dissolves the connection if empty."""
+    """Deletes a line segment, splitting the connection if disconnected."""
     if line in conn.lines:
         conn.lines.remove(line)
     elif (line[1], line[0]) in conn.lines:
         conn.lines.remove((line[1], line[0]))
         
     conn.validate_lines()
-    if not conn.lines:
-        # Dissolve connection
-        for c in conn.connector_nodes:
-            if c.linked_node is not None:
-                c.linked_node.connection = None
+    conn.split_if_disconnected()
 
 def delete_connector_node(app: PygameApp, conn: Connection, connector: ConnectorNode):
     """Deletes a connector node from the connection, removing all lines that use it."""
@@ -142,11 +133,7 @@ def delete_connector_node(app: PygameApp, conn: Connection, connector: Connector
         connector.linked_node.connection = None
         
     conn.validate_lines()
-    if not conn.lines:
-        # Dissolve connection
-        for c in conn.connector_nodes:
-            if c.linked_node is not None:
-                c.linked_node.connection = None
+    conn.split_if_disconnected()
 
 def split_line_on_connection(app: PygameApp, start_pt, conn_target: Connection, line_seg: tuple, click_pos: tuple, select_connector_fn):
     """Splits an existing connection wire line, connecting the split node to both endpoints and the start point."""
@@ -305,7 +292,7 @@ def main():
 
     # Load NOT gate logic component from not_gate.json
     try:
-        not_gate = LogicComponent.from_json("not_gate.json", pos=(screen_w * 0.45, screen_h * 0.45))
+        not_gate = LogicComponent.from_json("!=", pos=(screen_w * 0.45, screen_h * 0.45))
     except Exception as e:
         print(f"Error loading not_gate.json: {e}")
         not_gate = LogicComponent(
@@ -648,19 +635,18 @@ def main():
                     pygame.draw.circle(app.screen, h_color[:3], (int(c.pos[0]), int(c.pos[1])), 6)
                     pygame.draw.circle(app.screen, (220, 220, 225), (int(c.pos[0]), int(c.pos[1])), 6, 1)
 
-        # 4. Temporarily clear node connections so they don't draw connection wires again on top of themselves
-        saved_conns = {}
+        # 4. Set skip_connection_draw flag so they don't draw connection wires again on top of themselves
         for obj in app.objects:
-            if isinstance(obj, InteractiveNode) and obj.connection is not None:
-                saved_conns[obj] = obj.connection
-                obj.connection = None
+            if isinstance(obj, InteractiveNode):
+                obj.skip_connection_draw = True
                 
         # 5. Render node bodies (including selection outlines)
         original_draw()
         
-        # 6. Restore connection references
-        for node, conn in saved_conns.items():
-            node.connection = conn
+        # 6. Clear skip_connection_draw flag
+        for obj in app.objects:
+            if isinstance(obj, InteractiveNode):
+                obj.skip_connection_draw = False
 
     app.draw = custom_draw
 

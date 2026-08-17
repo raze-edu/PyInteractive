@@ -184,6 +184,82 @@ class Connection:
         py = y1 + t * dy
         return math.hypot(x - px, y - py)
 
+    def split_if_disconnected(self) -> List["Connection"]:
+        """Splits this connection into multiple separate Connection objects if it has become disconnected.
+        
+        Returns:
+            List[Connection]: The new connection objects created, or [self] if no split occurred.
+        """
+        if not self.lines:
+            # No lines at all, dissolve everything
+            for c in self.connector_nodes:
+                if c.linked_node is not None:
+                    c.linked_node.connection = None
+            return []
+
+        # Build adjacency list of connector IDs
+        adj = {c.id: [] for c in self.connector_nodes}
+        for id1, id2 in self.lines:
+            if id1 in adj and id2 in adj:
+                adj[id1].append(id2)
+                adj[id2].append(id1)
+
+        # BFS to find connected components
+        visited = set()
+        components = []  # list of lists of connector node IDs
+        
+        for c_node in self.connector_nodes:
+            if c_node.id not in visited:
+                comp = []
+                queue = [c_node.id]
+                visited.add(c_node.id)
+                while queue:
+                    curr = queue.pop(0)
+                    comp.append(curr)
+                    for neighbor in adj.get(curr, []):
+                        if neighbor not in visited:
+                            visited.add(neighbor)
+                            queue.append(neighbor)
+                components.append(comp)
+
+        # If all nodes are in one component, no split is needed
+        if len(components) <= 1:
+            return [self]
+
+        # Map connector node ID to ConnectorNode object
+        node_map = {c.id: c for c in self.connector_nodes}
+        new_connections = []
+        original_lines = list(self.lines)
+
+        for i, comp in enumerate(components):
+            comp_set = set(comp)
+            comp_lines = [line for line in original_lines if line[0] in comp_set and line[1] in comp_set]
+            comp_connectors = [node_map[cid] for cid in comp]
+
+            if not comp_lines:
+                # Isolated node component
+                for c in comp_connectors:
+                    if c.linked_node is not None:
+                        c.linked_node.connection = None
+            else:
+                # Create a new connection or reuse self for the first component
+                if i == 0:
+                    self.connector_nodes = comp_connectors
+                    self.lines = comp_lines
+                    # Update backreferences
+                    for c in comp_connectors:
+                        if c.linked_node is not None:
+                            c.linked_node.connection = self
+                    new_connections.append(self)
+                else:
+                    new_conn = Connection(connector_nodes=comp_connectors, lines=comp_lines)
+                    for c in comp_connectors:
+                        if c.linked_node is not None:
+                            c.linked_node.connection = new_conn
+                    new_connections.append(new_conn)
+
+        return new_connections
+
 
 class InteractiveNode:
     """Base class for interactive nodes that can be placed and dragged.
@@ -326,7 +402,7 @@ class InteractiveNode:
     def draw(self, screen: pygame.Surface, app: Any) -> None:
         """Renders the node and its connection lines (connection drawn underneath)."""
         # 1. Draw connection first (visually under the node)
-        if self.connection is not None:
+        if self.connection is not None and not getattr(self, "skip_connection_draw", False):
             self.connection.draw(screen, app)
 
         # 2. Draw node body
@@ -493,6 +569,7 @@ class ComponentSubNode(InteractiveNode):
             label_prefix=custom_label,
             state=False
         )
+        self._evaluating = False
 
     @property
     def x(self) -> float:
@@ -518,12 +595,18 @@ class ComponentSubNode(InteractiveNode):
 
     @property
     def state(self) -> bool:
-        if self.is_transmitter:
-            return self.parent.get_output_state(self)
-        else:
-            if self.connection is not None:
-                return self.connection.state
+        if getattr(self, "_evaluating", False):
             return False
+        self._evaluating = True
+        try:
+            if self.is_transmitter:
+                return self.parent.get_output_state(self)
+            else:
+                if self.connection is not None:
+                    return self.connection.state
+                return False
+        finally:
+            self._evaluating = False
 
     @state.setter
     def state(self, val: bool) -> None:
@@ -531,14 +614,14 @@ class ComponentSubNode(InteractiveNode):
         pass
 
     def draw(self, screen: pygame.Surface, app: Any) -> None:
-        """Draws the sub-node circle and handles glow effect."""
+        """Draws the sub-node triangle and handles glow effect."""
         # 1. Draw connection line if any (connection drawn underneath)
-        if self.connection is not None:
+        if self.connection is not None and not getattr(self, "skip_connection_draw", False):
             self.connection.draw(screen, app)
 
         # 2. Draw subnode body
-        active_fill = self.color if self.color else app.get_color("node_active_fill", (46, 204, 113, 255))
-        inactive_fill = self.color if self.color else app.get_color("node_inactive_fill", (70, 70, 75, 255))
+        active_fill = app.get_color("node_active_fill", (46, 204, 113, 255))
+        inactive_fill = app.get_color("node_inactive_fill", (70, 70, 75, 255))
         active_border = app.get_color("node_active_border", (50, 255, 120, 255))
         inactive_border = app.get_color("node_inactive_border", (140, 140, 150, 255))
         glow_color = app.get_color("node_active_glow", (46, 204, 113, 40))
@@ -549,14 +632,39 @@ class ComponentSubNode(InteractiveNode):
 
         cx, cy = self.center
 
+        # Calculate triangle orientation: pointing inwards (input) or outwards (output)
+        pc_x = self.parent.width / 2.0
+        pc_y = self.parent.height / 2.0
+        dx = pc_x - self.rel_x
+        dy = pc_y - self.rel_y
+        length = math.hypot(dx, dy)
+        if length > 0:
+            ux, uy = dx / length, dy / length
+        else:
+            ux, uy = 1.0, 0.0
+
+        # Inputs point inwards (towards center), outputs point away (away from center)
+        if self.is_transmitter:
+            px, py = -ux, -uy
+        else:
+            px, py = ux, uy
+
+        r = self.radius
+
         # Selection outline (yellow border)
         if getattr(self, "selected", False):
             sel_color = app.get_color("node_selected_border", (255, 220, 0, 255))
-            pygame.draw.circle(screen, sel_color[:3], (int(cx), int(cy)), int(self.radius) + 3, 2)
+            r_sel = r + 3
+            V1_s = (cx + r_sel * px, cy + r_sel * py)
+            bc_x_s = cx - 0.5 * r_sel * px
+            bc_y_s = cy - 0.5 * r_sel * py
+            V2_s = (bc_x_s - r_sel * py, bc_y_s + r_sel * px)
+            V3_s = (bc_x_s + r_sel * py, bc_y_s - r_sel * px)
+            pygame.draw.polygon(screen, sel_color[:3], [V1_s, V2_s, V3_s], 2)
 
         # Visual glow
         if state_active:
-            glow_radius = int(self.radius * 1.5)
+            glow_radius = int(r * 1.5)
             glow_surf = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
             pygame.draw.circle(
                 glow_surf,
@@ -566,9 +674,15 @@ class ComponentSubNode(InteractiveNode):
             )
             screen.blit(glow_surf, (int(cx - glow_radius), int(cy - glow_radius)))
 
-        # Draw circle
-        pygame.draw.circle(screen, fill_color[:3], (int(cx), int(cy)), int(self.radius))
-        pygame.draw.circle(screen, border_color[:3], (int(cx), int(cy)), int(self.radius), 1)
+        # Draw actual triangle shape
+        V1 = (cx + r * px, cy + r * py)
+        bc_x = cx - 0.5 * r * px
+        bc_y = cy - 0.5 * r * py
+        V2 = (bc_x - r * py, bc_y + r * px)
+        V3 = (bc_x + r * py, bc_y - r * px)
+
+        pygame.draw.polygon(screen, fill_color[:3], [V1, V2, V3])
+        pygame.draw.polygon(screen, border_color[:3], [V1, V2, V3], 1)
 
 
 class LogicComponent(InteractiveNode):
@@ -749,13 +863,28 @@ class LogicComponent(InteractiveNode):
             screen.blit(lbl_surf, (int(out.x + ox), int(out.y + oy)))
 
     @classmethod
-    def from_json(cls, json_path_or_dict: Union[str, dict], pos: Tuple[float, float] = (100, 100)) -> "LogicComponent":
-        """Loads and returns a LogicComponent from a JSON file path or a dictionary."""
-        if isinstance(json_path_or_dict, str):
-            with open(json_path_or_dict, "r") as f:
-                data = json.load(f)
-        else:
-            data = json_path_or_dict
+    def from_json(cls, source: Union[str, dict], pos: Tuple[float, float] = (100, 100)) -> "LogicComponent":
+        """Loads and returns a LogicComponent from a JSON library component name, file path, or dictionary."""
+        data = None
+        if isinstance(source, dict):
+            data = source
+        elif isinstance(source, str):
+            import os
+            # If it points to an existing file, load it directly
+            if os.path.exists(source):
+                with open(source, "r") as f:
+                    data = json.load(f)
+            else:
+                # Otherwise, treat as component name in LogicComponentLib.json
+                lib_path = 'D:\\PyInteractive\\LogicComponentLib.json'
+                if os.path.exists(lib_path):
+                    with open(lib_path, "r") as f:
+                        for item in json.load(f):
+                            if item.get("name") == source:
+                                data = item
+                                break
+        if not data:
+            data = {}
 
         # Extract values
         name = data.get("name", "Logic Gate")
