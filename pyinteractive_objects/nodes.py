@@ -2,6 +2,9 @@ import math
 import json
 from typing import Any, List, Tuple, Optional, Union
 import pygame
+from pathlib import Path
+
+LogicComponentLibPath = Path("mode/LogicGate/LogicComponentLib.json")
 
 class NodeRegistry:
     """Manages unique identifiers and number allocation for interactive nodes."""
@@ -279,6 +282,7 @@ class InteractiveNode:
     ):
         self.shape = shape
         self.label_prefix = label_prefix
+        self.custom_name = None
         
         if shape == "circle":
             self.x, self.y = pos  # representing center coords
@@ -317,6 +321,8 @@ class InteractiveNode:
     @property
     def label(self) -> str:
         """Returns the identifying label (e.g. prefix + unique number)."""
+        if getattr(self, "custom_name", None) is not None:
+            return self.custom_name
         return f"{self.label_prefix}{self.number}"
 
     @property
@@ -876,8 +882,8 @@ class LogicComponent(InteractiveNode):
                     data = json.load(f)
             else:
                 # Otherwise, treat as component name in LogicComponentLib.json
-                lib_path = 'D:\\PyInteractive\\LogicComponentLib.json'
-                if os.path.exists(lib_path):
+                lib_path = LogicComponentLibPath
+                if lib_path.exists():
                     with open(lib_path, "r") as f:
                         for item in json.load(f):
                             if item.get("name") == source:

@@ -50,6 +50,13 @@ class LogicGateApp(PygameApp):
         self.bar_scroll_x = 0.0
         self.selected_placement_item = None
         
+        # Left panel variables
+        self.left_panel_open = False
+        self.left_panel_slide_ratio = 0.0
+        self.left_panel_scroll_y = 0.0
+        self.editing_node = None
+        self.editing_name = ""
+
         # Load logic component template library
         self.gui_library = load_gui_library()
 
@@ -194,6 +201,28 @@ class LogicGateApp(PygameApp):
             self.is_running = False
             return
             
+        # Toggle left panel on F2 key
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_F2:
+            self.left_panel_open = not self.left_panel_open
+            if not self.left_panel_open:
+                # If closed, commit or cancel editing
+                if getattr(self, "editing_node", None) is not None:
+                    name_to_commit = self.editing_name.strip()
+                    from mode.LogicGate.gui import is_name_valid_and_unique
+                    if is_name_valid_and_unique(self, self.editing_node, name_to_commit):
+                        self.editing_node.custom_name = name_to_commit
+                        if self.mode == "builder":
+                            from mode.LogicGate.builder import init_builder_mode
+                            init_builder_mode(self)
+                    self.editing_node = None
+            return
+
+        # Intercept event for left panel if slide ratio > 0
+        if getattr(self, "left_panel_slide_ratio", 0.0) > 0.0:
+            from mode.LogicGate.gui import handle_left_panel_event
+            if handle_left_panel_event(self, event):
+                return
+
         if self.mode == "builder":
             handle_builder_event(self, event)
         else:
@@ -234,6 +263,14 @@ class LogicGateApp(PygameApp):
 
     def update(self, dt: float):
         """Updates physics/drawing offsets (only updates GUI slide animations in sim mode)."""
+        # Update left panel slide animation
+        left_panel_open = getattr(self, "left_panel_open", False)
+        panel_speed = 8.0
+        if left_panel_open:
+            self.left_panel_slide_ratio = min(1.0, self.left_panel_slide_ratio + panel_speed * dt)
+        else:
+            self.left_panel_slide_ratio = max(0.0, self.left_panel_slide_ratio - panel_speed * dt)
+
         if self.mode == "sim":
             update_gui(self, dt)
         
@@ -258,6 +295,11 @@ class LogicGateApp(PygameApp):
             # Render builder UI
             draw_builder(self.screen, self)
 
+        # Draw left panel on top of all modes if slide ratio is greater than zero
+        if getattr(self, "left_panel_slide_ratio", 0.0) > 0.0:
+            from mode.LogicGate.gui import draw_left_panel
+            draw_left_panel(self.screen, self)
+
     def _draw_hud_instructions(self):
         """Renders simulation guide overlays."""
         screen_w = self.screen.get_width()
@@ -278,6 +320,7 @@ class LogicGateApp(PygameApp):
             "CTRL + CLICK: Draw wire connection from selected point to empty space/node/connector",
             "CTRL + CLICK on wire line: Splits the wire segment",
             "DELETE KEY: Remove the selected node, wire segment, or connector",
+            "F2 KEY: Toggle Left Nodes panel (scrollable, click to center/edit name)",
             "Hover mouse at bottom edge to pick components | Click '+' in top-right to build new gate",
             "ESC to Exit"
         ]
