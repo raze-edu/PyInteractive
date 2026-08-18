@@ -8,7 +8,7 @@ if root_dir not in sys.path:
 
 import pygame
 from pyinteractive import PygameApp
-from pyinteractive_objects.nodes import (
+from mode.LogicGate.Nodes import (
     InteractiveNode,
     GlobalInputNode,
     GlobalOutputNode,
@@ -94,16 +94,16 @@ class LogicGateApp(PygameApp):
         screen_w = self.screen.get_width()
         screen_h = self.screen.get_height()
 
-        inp1 = GlobalInputNode(pos=(screen_w * 0.15, screen_h * 0.3), size=25.0)
-        inp2 = GlobalInputNode(pos=(screen_w * 0.15, screen_h * 0.5), size=25.0)
-        out1 = GlobalOutputNode(pos=(screen_w * 0.75, screen_h * 0.4), size=50.0)
+        inp1 = GlobalInputNode(pos=(0.15, 0.3))
+        inp2 = GlobalInputNode(pos=(0.15, 0.5))
+        out1 = GlobalOutputNode(pos=(0.75, 0.4))
 
         # Load standard gate from library if present
         gate = None
         for item in self.gui_library:
             if item["type"] == "gate" and item["name"] == "!=":
                 try:
-                    gate = LogicComponent.from_json("!=", pos=(screen_w * 0.4, screen_h * 0.38))
+                    gate = LogicComponent.from_json("!=", pos=(0.4, 0.38))
                 except Exception as e:
                     print(f"Error auto-loading NOT gate: {e}")
                 break
@@ -234,19 +234,21 @@ class LogicGateApp(PygameApp):
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self.selected_placement_item is not None:
                     # Ignore placement Y inside bottom hover Y area
+                    screen_w = self.screen.get_width()
                     screen_h = self.screen.get_height()
                     if event.pos[1] < screen_h - 110:
                         canvas_pos = to_canvas(event.pos, self.offset)
+                        rel_pos = (canvas_pos[0] / screen_w, canvas_pos[1] / screen_h)
                         item = self.selected_placement_item
                         if item["type"] == "input":
-                            inp = GlobalInputNode(pos=canvas_pos, size=25.0)
+                            inp = GlobalInputNode(pos=rel_pos)
                             self.add_object(inp)
                         elif item["type"] == "output":
-                            out = GlobalOutputNode(pos=canvas_pos, size=50.0)
+                            out = GlobalOutputNode(pos=rel_pos)
                             self.add_object(out)
                         elif item["type"] == "gate":
                             try:
-                                gate = LogicComponent.from_json(item["name"], pos=canvas_pos)
+                                gate = LogicComponent.from_json(item["name"], pos=rel_pos)
                                 self.add_object(gate)
                                 for inp in gate.inputs:
                                     self.add_object(inp)

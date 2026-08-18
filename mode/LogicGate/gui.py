@@ -231,7 +231,7 @@ def is_name_valid_and_unique(app: Any, node: Any, name: str) -> bool:
     import re
     if not re.match(r'^[a-zA-Z0-9_]+$', name):
         return False
-    from pyinteractive_objects.nodes import GlobalInputNode, GlobalOutputNode
+    from mode.LogicGate.Nodes import GlobalInputNode, GlobalOutputNode
     for obj in app.objects:
         if isinstance(obj, (GlobalInputNode, GlobalOutputNode)) and obj is not node:
             if obj.label == name:
@@ -240,7 +240,7 @@ def is_name_valid_and_unique(app: Any, node: Any, name: str) -> bool:
 
 def draw_left_panel(screen: pygame.Surface, app: Any):
     """Renders the scrollable nodes list on the left side of the screen."""
-    from pyinteractive_objects.nodes import GlobalInputNode, GlobalOutputNode
+    from mode.LogicGate.Nodes import GlobalInputNode, GlobalOutputNode
     in_nodes = [obj for obj in app.objects if isinstance(obj, GlobalInputNode)]
     out_nodes = [obj for obj in app.objects if isinstance(obj, GlobalOutputNode)]
     nodes = sorted(in_nodes, key=lambda n: n.label) + sorted(out_nodes, key=lambda n: n.label)
@@ -401,7 +401,7 @@ def handle_left_panel_event(app: Any, event: pygame.event.Event) -> bool:
 
     # 2. Check mouse events
     if event.type == pygame.MOUSEBUTTONDOWN:
-        from pyinteractive_objects.nodes import GlobalInputNode, GlobalOutputNode
+        from mode.LogicGate.Nodes import GlobalInputNode, GlobalOutputNode
         in_nodes = [obj for obj in app.objects if isinstance(obj, GlobalInputNode)]
         out_nodes = [obj for obj in app.objects if isinstance(obj, GlobalOutputNode)]
         nodes = sorted(in_nodes, key=lambda n: n.label) + sorted(out_nodes, key=lambda n: n.label)

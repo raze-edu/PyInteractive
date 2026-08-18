@@ -4,7 +4,7 @@ import math
 import itertools
 import pygame
 from typing import Any, Tuple, List
-from pyinteractive_objects.nodes import GlobalInputNode, GlobalOutputNode
+from mode.LogicGate.Nodes import GlobalInputNode, GlobalOutputNode
 
 
 def init_builder_mode(app: Any):
@@ -27,6 +27,7 @@ def init_builder_mode(app: Any):
     app.builder_focus = None
     app.builder_dragging_node = None  # Tuple: ("in"/"out", index)
     app.builder_dragging_slider = None
+    app.builder_compile_mode = "table"
 
     # Distribute inputs along left edge, outputs along right edge
     app.builder_in_positions = []
@@ -149,6 +150,15 @@ def draw_builder(screen: pygame.Surface, app: Any):
     app.g_rect = draw_slider(screen, px_x, 375, 220, app.builder_color[1], 0.0, 255.0, "Color G", lbl_font, (46, 204, 113))
     app.b_rect = draw_slider(screen, px_x, 435, 220, app.builder_color[2], 0.0, 255.0, "Color B", lbl_font, (52, 152, 219))
 
+    # Compilation mode toggle button at Y=490
+    app.compile_mode_btn = pygame.Rect(px_x, 490, 220, 30)
+    hb_mode = app.compile_mode_btn.collidepoint(mouse_pos)
+    btn_color = (155, 89, 182) if hb_mode else (142, 68, 173)
+    pygame.draw.rect(screen, btn_color, app.compile_mode_btn, border_radius=6)
+    mode_text = "Mode: Composite (Simulated)" if app.builder_compile_mode == "composite" else "Mode: Truth Table"
+    mode_surf = lbl_font.render(mode_text, True, (255, 255, 255))
+    screen.blit(mode_surf, (app.compile_mode_btn.centerx - mode_surf.get_width() / 2, app.compile_mode_btn.centery - mode_surf.get_height() / 2))
+
     # 3. Draw Center Preview Logic component
     pw = app.builder_width
     ph = app.builder_height
@@ -269,11 +279,9 @@ def compile_truth_table(app: Any) -> dict:
     return truth_table
 
 def confirm_builder_compilation(app: Any) -> bool:
-    """Compiles truth table, serializes component dictionary, and appends to LogicComponentLib.json."""
+    """Compiles template, serializes component dictionary, and appends to LogicComponentLib.json."""
     if not app.builder_inputs or not app.builder_outputs:
         return False
-
-    table = compile_truth_table(app)
     
     # Build component template dictionary
     component_def = {
@@ -298,9 +306,16 @@ def confirm_builder_compilation(app: Any) -> bool:
                 "color": [46, 204, 113, 255]
             }
             for p in app.builder_out_positions
-        ],
-        "logic_table": table
+        ]
     }
+
+    if getattr(app, "builder_compile_mode", "table") == "composite":
+        from mode.LogicGate.Nodes import serialize_canvas
+        component_def["type"] = "composite"
+        component_def["inner_circuit"] = serialize_canvas(app)
+    else:
+        table = compile_truth_table(app)
+        component_def["logic_table"] = table
 
     # Append to LogicComponentLib.json
     lib_path = 'D:\\PyInteractive\\mode\\LogicGate\\LogicComponentLib.json'
@@ -368,6 +383,12 @@ def handle_builder_event(app: Any, event: pygame.event.Event) -> bool:
             return True
         elif app.cancel_btn.collidepoint(event.pos):
             app.switch_to_sim()
+            return True
+        elif getattr(app, "compile_mode_btn", pygame.Rect(0,0,0,0)).collidepoint(event.pos):
+            if getattr(app, "builder_compile_mode", "table") == "table":
+                app.builder_compile_mode = "composite"
+            else:
+                app.builder_compile_mode = "table"
             return True
 
         # 3. Check Sliders click/drag

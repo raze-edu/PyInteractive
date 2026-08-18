@@ -1,14 +1,15 @@
 import math
 import pygame
 from typing import Any, Tuple
-from pyinteractive_objects.nodes import (
+from mode.LogicGate.Nodes import (
     InteractiveNode,
     GlobalInputNode,
     GlobalOutputNode,
     ConnectorNode,
     Connection,
     LogicComponent,
-    ComponentSubNode
+    ComponentSubNode,
+    shared_style
 )
 
 def to_canvas(screen_pos: Tuple[float, float], offset: Tuple[float, float]) -> Tuple[float, float]:
@@ -159,6 +160,7 @@ def delete_connector_node(app: Any, conn: Connection, connector: ConnectorNode):
 def split_line_on_connection(app: Any, start_pt, conn_target: Connection, line_seg: tuple, click_pos: tuple, select_connector_fn):
     """Splits an existing connection wire line, connecting the split node to both endpoints and the start point."""
     mx, my = click_pos
+    screen_w, screen_h = app.screen.get_size()
     
     # 1. Resolve connection of starting point
     conn_start = None
@@ -191,9 +193,9 @@ def split_line_on_connection(app: Any, start_pt, conn_target: Connection, line_s
     else:
         c_start = start_pt
         
-    # Create split connector node
+    # Create split connector node using relative coordinates
     split_id = f"split_{pygame.time.get_ticks()}_{id(start_pt)}"
-    c_split = ConnectorNode(identifier=split_id, x=mx, y=my)
+    c_split = ConnectorNode(identifier=split_id, x=mx / screen_w, y=my / screen_h)
     active_conn.add_connector_node(c_split)
     
     # Remove original line
@@ -229,53 +231,33 @@ def draw_sim(screen: pygame.Surface, app: Any):
     draw_grid(screen, app.offset, width, height)
 
     ox, oy = app.offset
-    
-    # Temporarily offset all non-subnode coordinates
-    shifted_objects = []
-    for obj in app.objects:
-        if not isinstance(obj, ComponentSubNode):
-            obj.x += ox
-            obj.y += oy
-            shifted_objects.append(obj)
-
-    shifted_connectors = []
-    for conn in app.connections:
-        for c in conn.connector_nodes:
-            if c.linked_node is None:
-                c.x += ox
-                c.y += oy
-                shifted_connectors.append(c)
 
     # Draw connection lines (bottom layer)
     for conn in app.connections:
         conn.draw(screen, app)
 
     # Draw connector handles
+    active_handle_color = shared_style.get_color("connection_active", (0, 255, 240, 255))
+    inactive_handle_color = shared_style.get_color("connection_inactive", (80, 80, 95, 255))
+    
     for conn in app.connections:
-        active_handle_color = app.get_color("connection_active", (0, 255, 240, 255))
-        inactive_handle_color = app.get_color("connection_inactive", (80, 80, 95, 255))
         h_color = active_handle_color if conn.state else inactive_handle_color
         for c in conn.connector_nodes:
+            abs_cx = int(c.pos[0] * width + ox)
+            abs_cy = int(c.pos[1] * height + oy)
+            
             if app.selected_start_point is c:
-                pygame.draw.circle(screen, (255, 220, 0), (int(c.pos[0]), int(c.pos[1])), 9, 2)
-                pygame.draw.circle(screen, (255, 220, 0), (int(c.pos[0]), int(c.pos[1])), 3)
+                pygame.draw.circle(screen, (255, 220, 0), (abs_cx, abs_cy), 9, 2)
+                pygame.draw.circle(screen, (255, 220, 0), (abs_cx, abs_cy), 3)
             else:
-                pygame.draw.circle(screen, h_color[:3], (int(c.pos[0]), int(c.pos[1])), 6)
-                pygame.draw.circle(screen, (220, 220, 225), (int(c.pos[0]), int(c.pos[1])), 6, 1)
+                pygame.draw.circle(screen, h_color[:3], (abs_cx, abs_cy), 6)
+                pygame.draw.circle(screen, (220, 220, 225), (abs_cx, abs_cy), 6, 1)
 
     # Draw nodes/components
     for obj in app.objects:
         obj.skip_connection_draw = True
         obj.draw(screen, app)
         obj.skip_connection_draw = False
-
-    # Restore coordinate values
-    for obj in shifted_objects:
-        obj.x -= ox
-        obj.y -= oy
-    for c in shifted_connectors:
-        c.x -= ox
-        c.y -= oy
 
 def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
     """Processes canvas logic events, including dragging, connecting, and panning."""
@@ -301,6 +283,10 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
     if getattr(app, "is_panning", False):
         return True
 
+    # Get current screen / canvas dimensions
+    screen_w, screen_h = app.screen.get_size()
+    canvas_size = (screen_w, screen_h)
+
     # Forward event to objects (with canvas mouse position mapped) first, so objects process drag/click states
     for obj in app.objects:
         if hasattr(obj, "handle_event") and callable(obj.handle_event):
@@ -309,7 +295,7 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
                 old_pos = event.pos
                 event.pos = to_canvas(old_pos, app.offset)
             try:
-                obj.handle_event(event)
+                obj.handle_event(event, canvas_size)
             finally:
                 if has_pos:
                     event.pos = old_pos
@@ -340,11 +326,13 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
             mouse_pos = to_canvas(event.pos, app.offset)
             ctrl_held = (pygame.key.get_mods() & pygame.KMOD_CTRL)
 
-            # Check connector node collisions
+            # Check connector node collisions (converting relative coordinates to absolute screen pixels)
             clicked_connector = None
             for conn in app.connections:
                 for c in conn.connector_nodes:
-                    if math.hypot(mouse_pos[0] - c.pos[0], mouse_pos[1] - c.pos[1]) <= 10:
+                    abs_cx = c.pos[0] * screen_w
+                    abs_cy = c.pos[1] * screen_h
+                    if math.hypot(mouse_pos[0] - abs_cx, mouse_pos[1] - abs_cy) <= 10:
                         clicked_connector = c
                         break
                 if clicked_connector:
@@ -353,7 +341,7 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
             # Check node collisions (check reversed to prioritize top-drawn elements)
             clicked_node = None
             for obj in reversed(app.objects):
-                if isinstance(obj, InteractiveNode) and obj.collidepoint(mouse_pos):
+                if isinstance(obj, InteractiveNode) and obj.collidepoint(mouse_pos, canvas_size):
                     clicked_node = obj
                     break
 
@@ -365,7 +353,7 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
                 clicked_line_conn = None
                 clicked_line_seg = None
                 for conn in app.connections:
-                    line = conn.get_colliding_line(mouse_pos, threshold=8.0)
+                    line = conn.get_colliding_line(mouse_pos, canvas_size, threshold=8.0)
                     if line is not None:
                         clicked_line_conn = conn
                         clicked_line_seg = line
@@ -457,9 +445,9 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
                             app.select_node(None)
                             app.select_connector(clicked_connector)
                     else:
-                        # Draw wire to free space
+                        # Draw wire to free space (storing relative coordinates)
                         free_id = f"free_{pygame.time.get_ticks()}_{id(start_pt)}"
-                        c_free = ConnectorNode(identifier=free_id, x=mouse_pos[0], y=mouse_pos[1])
+                        c_free = ConnectorNode(identifier=free_id, x=mouse_pos[0] / screen_w, y=mouse_pos[1] / screen_h)
                         
                         if isinstance(start_pt, InteractiveNode):
                             if start_pt.connection is not None:
@@ -500,14 +488,17 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
                         clicked_connector.linked_node.is_dragging = True
                         clicked_connector.linked_node.drag_start_pos = mouse_pos
                         clicked_connector.linked_node.dragged_far = False
-                        clicked_connector.linked_node.drag_offset_x = mouse_pos[0] - clicked_connector.linked_node.x
-                        clicked_connector.linked_node.drag_offset_y = mouse_pos[1] - clicked_connector.linked_node.y
+                        clicked_connector.linked_node.drag_offset_x = (mouse_pos[0] / screen_w) - clicked_connector.linked_node.x
+                        clicked_connector.linked_node.drag_offset_y = (mouse_pos[1] / screen_h) - clicked_connector.linked_node.y
                     else:
                         app.select_connector(clicked_connector)
                         app.is_dragging_connector = True
                         app.dragged_connector = clicked_connector
-                        app.drag_offset_x = mouse_pos[0] - clicked_connector.x
-                        app.drag_offset_y = mouse_pos[1] - clicked_connector.y
+                        # Store absolute offset from the connector's absolute position
+                        abs_cx = clicked_connector.x * screen_w
+                        abs_cy = clicked_connector.y * screen_h
+                        app.drag_offset_x = mouse_pos[0] - abs_cx
+                        app.drag_offset_y = mouse_pos[1] - abs_cy
                 elif clicked_node is not None:
                     app.select_node(clicked_node)
                 else:
@@ -515,7 +506,7 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
                     clicked_conn = None
                     clicked_line = None
                     for conn in app.connections:
-                        line = conn.get_colliding_line(mouse_pos, threshold=8.0)
+                        line = conn.get_colliding_line(mouse_pos, canvas_size, threshold=8.0)
                         if line is not None:
                             clicked_conn = conn
                             clicked_line = line
@@ -532,8 +523,9 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
             mouse_pos = to_canvas(event.pos, app.offset)
             c = app.dragged_connector
             # Drag free connector node (linked nodes are handled by InteractiveNode itself)
-            c.x = mouse_pos[0] - app.drag_offset_x
-            c.y = mouse_pos[1] - app.drag_offset_y
+            # Store updated position in relative coordinates!
+            c.x = (mouse_pos[0] - app.drag_offset_x) / screen_w
+            c.y = (mouse_pos[1] - app.drag_offset_y) / screen_h
             return True
 
     elif event.type == pygame.MOUSEBUTTONUP:
