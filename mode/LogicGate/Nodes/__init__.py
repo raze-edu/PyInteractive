@@ -5,7 +5,9 @@ from .nodes_base import (
     GlobalOutputNode,
     ComponentSubNode,
     LogicComponent,
-    serialize_canvas
+    serialize_canvas,
+    ArrayNode,
+    NodeArray
 )
 from .connections import (
     ConnectorNode,

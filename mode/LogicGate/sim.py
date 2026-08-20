@@ -9,7 +9,9 @@ from mode.LogicGate.Nodes import (
     Connection,
     LogicComponent,
     ComponentSubNode,
-    shared_style
+    shared_style,
+    ArrayNode,
+    NodeArray
 )
 
 def to_canvas(screen_pos: Tuple[float, float], offset: Tuple[float, float]) -> Tuple[float, float]:
@@ -113,6 +115,16 @@ def delete_selected_node(app: Any, node: InteractiveNode):
             delete_selected_node(app, inp)
         for out in list(node.outputs):
             delete_selected_node(app, out)
+        return
+    elif isinstance(node, NodeArray):
+        app.remove_object(node)
+        for sub in list(node.nodes):
+            delete_selected_node(app, sub)
+        return
+    elif isinstance(node, ArrayNode):
+        parent = node.parent
+        if parent in app.objects:
+            delete_selected_node(app, parent)
         return
     elif isinstance(node, ComponentSubNode):
         parent = node.parent
@@ -302,6 +314,42 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
 
     # 2. Deletions
     if event.type == pygame.KEYDOWN:
+        active_arr = getattr(app, "editing_array_value_node", None)
+        if active_arr is not None:
+            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                if getattr(app, "editing_array_value_str", "") != "":
+                    try:
+                        active_arr.value = int(app.editing_array_value_str)
+                    except ValueError:
+                        pass
+                app.editing_array_value_node = None
+                return True
+            elif event.key == pygame.K_ESCAPE:
+                app.editing_array_value_node = None
+                return True
+            elif event.key == pygame.K_BACKSPACE:
+                app.editing_array_value_str = app.editing_array_value_str[:-1]
+                if app.editing_array_value_str:
+                    try:
+                        active_arr.value = int(app.editing_array_value_str)
+                    except ValueError:
+                        pass
+                else:
+                    active_arr.value = 0
+                return True
+            elif event.unicode and event.unicode.isdigit():
+                new_str = app.editing_array_value_str + event.unicode
+                try:
+                    val = int(new_str)
+                    max_val = (1 << active_arr.array_size) - 1
+                    if val <= max_val:
+                        app.editing_array_value_str = new_str
+                        active_arr.value = val
+                except ValueError:
+                    pass
+                return True
+            return True
+
         if event.key == pygame.K_DELETE:
             if app.selected_node:
                 delete_selected_node(app, app.selected_node)
@@ -322,6 +370,7 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
     # 3. Canvas Clicks and Drags
     elif event.type == pygame.MOUSEBUTTONDOWN:
         if event.button == 1:
+            app.editing_array_value_node = None
             # Map click coordinates to canvas offset coordinates
             mouse_pos = to_canvas(event.pos, app.offset)
             ctrl_held = (pygame.key.get_mods() & pygame.KMOD_CTRL)
@@ -501,6 +550,27 @@ def handle_sim_event(app: Any, event: pygame.event.Event) -> bool:
                         app.drag_offset_y = mouse_pos[1] - abs_cy
                 elif clicked_node is not None:
                     app.select_node(clicked_node)
+                    # NodeArray value editing mode check
+                    from mode.LogicGate.Nodes import NodeArray
+                    if isinstance(clicked_node, NodeArray) and clicked_node.array_type == "input":
+                        abs_x = clicked_node.x * screen_w + app.offset[0]
+                        abs_y = clicked_node.y * screen_h + app.offset[1]
+                        abs_w = clicked_node.width * screen_w
+                        abs_h = clicked_node.height * screen_h
+                        
+                        mx, my = event.pos
+                        
+                        is_in_value_area = False
+                        if clicked_node.alignment == "V":
+                            if my > abs_y + abs_h / 2.0:
+                                is_in_value_area = True
+                        else:
+                            if mx > abs_x + abs_w / 2.0:
+                                is_in_value_area = True
+                                
+                        if is_in_value_area:
+                            app.editing_array_value_node = clicked_node
+                            app.editing_array_value_str = ""
                 else:
                     # Check wire segment selection
                     clicked_conn = None

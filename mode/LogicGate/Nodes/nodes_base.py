@@ -654,7 +654,8 @@ class LogicComponent(InteractiveNode):
         abs_w = self.width * canvas_w
         abs_h = self.height * canvas_h
 
-        bg_fill = self.color if self.color else shared_style.get_color("logic_component_fill", (142, 68, 173, 255))
+        group_color = app.get_component_group_color(self.label_prefix)
+        bg_fill = group_color if group_color is not None else (self.color if self.color else shared_style.get_color("logic_component_fill", (142, 68, 173, 255)))
         border_color = shared_style.get_color("node_inactive_border", (140, 140, 150, 255))
         
         rect_obj = pygame.Rect(int(abs_x), int(abs_y), int(abs_w), int(abs_h))
@@ -874,6 +875,290 @@ class LogicComponent(InteractiveNode):
             json.dump(self.to_dict(), f, indent=2)
 
 
+class ArrayNode(ComponentSubNode):
+    """An individual connectable node belonging to a NodeArray."""
+    def __init__(
+        self,
+        parent: "NodeArray",
+        rel_x: float,
+        rel_y: float,
+        is_transmitter: bool,
+        custom_label: str
+    ):
+        size = 0.005
+        color = (46, 204, 113, 255) if is_transmitter else (70, 70, 75, 255)
+        super().__init__(
+            parent=parent,
+            rel_x=rel_x,
+            rel_y=rel_y,
+            is_transmitter=is_transmitter,
+            custom_label=custom_label,
+            size=size,
+            color=color
+        )
+
+    @property
+    def label(self) -> str:
+        node_name = self.custom_name if self.custom_name else self._custom_label
+        return f"{self.parent.label}_{node_name}"
+
+    @property
+    def state(self) -> bool:
+        if getattr(self, "_evaluating", False):
+            return getattr(self, "_last_state", False)
+        self._evaluating = True
+        try:
+            if self.is_transmitter:
+                idx = self.parent.nodes.index(self)
+                val = bool((self.parent.value >> idx) & 1)
+            else:
+                if self.connection is not None:
+                    val = self.connection.state
+                else:
+                    val = getattr(self, "_state", False)
+            self._last_state = val
+            return val
+        finally:
+            self._evaluating = False
+
+    @state.setter
+    def state(self, val: bool) -> None:
+        self._state = val
+        if self.is_transmitter:
+            idx = self.parent.nodes.index(self)
+            if val:
+                self.parent._input_value |= (1 << idx)
+            else:
+                self.parent._input_value &= ~(1 << idx)
+
+    def draw(self, screen: pygame.Surface, app: Any) -> None:
+        if self.connection is not None and not getattr(self, "skip_connection_draw", False):
+            self.connection.draw(screen, app)
+
+        canvas_w, canvas_h = screen.get_size()
+        ox, oy = getattr(app, "offset", (0.0, 0.0))
+        cx = self.center[0] * canvas_w + ox
+        cy = self.center[1] * canvas_h + oy
+        abs_r = self.radius * canvas_w
+
+        active_fill = shared_style.get_color("node_active_fill", (46, 204, 113, 255))
+        inactive_fill = shared_style.get_color("node_inactive_fill", (70, 70, 75, 255))
+        active_border = shared_style.get_color("node_active_border", (50, 255, 120, 255))
+        inactive_border = shared_style.get_color("node_inactive_border", (140, 140, 150, 255))
+        glow_color = shared_style.get_color("node_active_glow", (46, 204, 113, 40))
+
+        state_active = self.state
+        fill_color = active_fill if state_active else inactive_fill
+        border_color = active_border if state_active else inactive_border
+
+        # Selection outline (yellow border)
+        if getattr(self, "selected", False):
+            sel_color = shared_style.get_color("node_selected_border", (255, 220, 0, 255))
+            pygame.draw.circle(screen, sel_color[:3], (int(cx), int(cy)), int(abs_r) + 3, 2)
+
+        # Visual glow
+        if state_active:
+            glow_mult = shared_style.get_size("glow_radius_multiplier", 1.5)
+            glow_radius = int(abs_r * glow_mult)
+            glow_surf = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(
+                glow_surf,
+                (glow_color[0], glow_color[1], glow_color[2], 60),
+                (glow_radius, glow_radius),
+                glow_radius
+            )
+            screen.blit(glow_surf, (int(cx - glow_radius), int(cy - glow_radius)))
+
+        if self.is_transmitter:
+            pygame.draw.circle(screen, fill_color[:3], (int(cx), int(cy)), int(abs_r))
+            pygame.draw.circle(screen, border_color[:3], (int(cx), int(cy)), int(abs_r), 1)
+        else:
+            side = abs_r * 2
+            pygame.draw.rect(screen, fill_color[:3], (int(cx - abs_r), int(cy - abs_r), int(side), int(side)))
+            pygame.draw.rect(screen, border_color[:3], (int(cx - abs_r), int(cy - abs_r), int(side), int(side)), 1)
+
+    def on_click(self) -> None:
+        if self.is_transmitter:
+            idx = self.parent.nodes.index(self)
+            self.parent._input_value ^= (1 << idx)
+
+
+class NodeArray(InteractiveNode):
+    """A container representing an array (2, 4, 8) of inputs or outputs.
+    
+    Can be vertically or horizontally aligned.
+    """
+    def __init__(
+        self,
+        array_type: str,
+        size: int,
+        alignment: str,
+        pos: Tuple[float, float],
+        label_prefix: str = None
+    ):
+        self.array_type = array_type.lower()
+        self.array_size = size
+        self.alignment = alignment.upper()
+        self._input_value = 0
+
+        if label_prefix is None:
+            label_prefix = "A" if self.array_type == "input" else "B"
+
+        if self.alignment == "V":
+            w = 80.0
+            h = 40.0 * (size + 1)
+        else:
+            w = 40.0 * (size + 1)
+            h = 80.0
+
+        w_rel = w / 1920.0
+        h_rel = h / 1080.0
+
+        super().__init__(
+            pos=pos,
+            shape="rectangle",
+            size=(w_rel, h_rel),
+            label_prefix=label_prefix,
+            state=False
+        )
+
+        self.nodes = []
+        for i in range(size):
+            if self.alignment == "V":
+                rel_x = w_rel if self.array_type == "input" else 0.0
+                spacing = h_rel / (size + 1)
+                rel_y = (i + 1) * spacing
+            else:
+                spacing = w_rel / (size + 1)
+                rel_x = (i + 1) * spacing
+                rel_y = h_rel if self.array_type == "input" else 0.0
+
+            sub = ArrayNode(
+                parent=self,
+                rel_x=rel_x,
+                rel_y=rel_y,
+                is_transmitter=(self.array_type == "input"),
+                custom_label=f"I{i}" if self.array_type == "input" else f"O{i}"
+            )
+            self.nodes.append(sub)
+
+    @property
+    def value(self) -> int:
+        if self.array_type == "input":
+            return self._input_value
+        else:
+            val = 0
+            for i, node in enumerate(self.nodes):
+                if node.state:
+                    val |= (1 << i)
+            return val
+
+    @value.setter
+    def value(self, val: int) -> None:
+        if self.array_type == "input":
+            max_val = (1 << self.array_size) - 1
+            self._input_value = max(0, min(max_val, val))
+
+    def handle_event(self, event: pygame.event.Event, canvas_size: Tuple[float, float]) -> None:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = getattr(event, "pos", None)
+            if mouse_pos is None:
+                if pygame.display.get_init():
+                    mouse_pos = pygame.mouse.get_pos()
+                else:
+                    mouse_pos = (0, 0)
+            if any(node.collidepoint(mouse_pos, canvas_size) for node in self.nodes):
+                return
+        super().handle_event(event, canvas_size)
+
+    def draw(self, screen: pygame.Surface, app: Any) -> None:
+        canvas_w, canvas_h = screen.get_size()
+        ox, oy = getattr(app, "offset", (0.0, 0.0))
+        abs_x = self.x * canvas_w + ox
+        abs_y = self.y * canvas_h + oy
+        abs_w = self.width * canvas_w
+        abs_h = self.height * canvas_h
+
+        group_color = app.get_component_group_color(self.label)
+        if group_color is None:
+            # Try to fetch default group color by label prefix
+            prefix_group = "Inputs" if self.array_type == "input" else "Outputs"
+            group_color = app.get_component_group_color(prefix_group)
+        
+        bg_fill = group_color if group_color is not None else ((142, 68, 173, 255) if self.array_type == "input" else (46, 204, 113, 255))
+        border_color = shared_style.get_color("node_inactive_border", (140, 140, 150, 255))
+
+        rect_obj = pygame.Rect(int(abs_x), int(abs_y), int(abs_w), int(abs_h))
+
+        if getattr(self, "selected", False):
+            sel_color = shared_style.get_color("node_selected_border", (255, 220, 0, 255))
+            try:
+                pygame.draw.rect(screen, sel_color[:3], pygame.Rect(int(abs_x) - 4, int(abs_y) - 4, int(abs_w) + 8, int(abs_h) + 8), 3, border_radius=8)
+            except TypeError:
+                pygame.draw.rect(screen, sel_color[:3], pygame.Rect(int(abs_x) - 4, int(abs_y) - 4, int(abs_w) + 8, int(abs_h) + 8), 3)
+
+        try:
+            pygame.draw.rect(screen, bg_fill[:3], rect_obj, border_radius=6)
+            pygame.draw.rect(screen, border_color[:3], rect_obj, 2, border_radius=6)
+        except TypeError:
+            pygame.draw.rect(screen, bg_fill[:3], rect_obj)
+            pygame.draw.rect(screen, border_color[:3], rect_obj, 2)
+
+        if not pygame.font.get_init():
+            pygame.font.init()
+        
+        font_h = int(min(abs_w, abs_h) * 0.3)
+        try:
+            font = pygame.font.Font(None, max(14, font_h))
+        except Exception:
+            font = pygame.font.SysFont("arial", max(14, font_h))
+
+        is_editing = getattr(app, "editing_array_value_node", None) is self
+        cursor = "|" if is_editing and (pygame.time.get_ticks() // 500) % 2 == 0 else ""
+        val_str = app.editing_array_value_str if is_editing else str(self.value)
+        
+        name_text = font.render(self.label, True, (255, 255, 255))
+        val_text = font.render(val_str + cursor, True, (255, 255, 0) if is_editing else (255, 255, 255))
+
+        if self.alignment == "V":
+            tx = abs_x + abs_w / 2.0 - name_text.get_width() / 2.0
+            ty = abs_y + abs_h * 0.25 - name_text.get_height() / 2.0
+            screen.blit(name_text, (int(tx), int(ty)))
+
+            vx = abs_x + abs_w / 2.0 - val_text.get_width() / 2.0
+            vy = abs_y + abs_h * 0.75 - val_text.get_height() / 2.0
+            screen.blit(val_text, (int(vx), int(vy)))
+        else:
+            tx = abs_x + abs_w * 0.25 - name_text.get_width() / 2.0
+            ty = abs_y + abs_h / 2.0 - name_text.get_height() / 2.0
+            screen.blit(name_text, (int(tx), int(ty)))
+
+            vx = abs_x + abs_w * 0.75 - val_text.get_width() / 2.0
+            vy = abs_y + abs_h / 2.0 - val_text.get_height() / 2.0
+            screen.blit(val_text, (int(vx), int(vy)))
+
+        try:
+            label_font = pygame.font.Font(None, max(12, int(min(abs_w, abs_h) * 0.2)))
+        except Exception:
+            label_font = pygame.font.SysFont("arial", max(12, int(min(abs_w, abs_h) * 0.2)))
+
+        for node in self.nodes:
+            display_name = node.custom_name if node.custom_name else node._custom_label
+            lbl_surf = label_font.render(display_name, True, (220, 220, 225))
+            abs_node_x = node.x * canvas_w + ox
+            abs_node_y = node.y * canvas_h + oy
+            
+            if self.alignment == "V":
+                ox_lbl = -14 - lbl_surf.get_width() if self.array_type == "input" else 14
+                oy_lbl = -lbl_surf.get_height() / 2
+            else:
+                ox_lbl = -lbl_surf.get_width() / 2
+                oy_lbl = -14 - lbl_surf.get_height() if self.array_type == "input" else 14
+                
+            screen.blit(lbl_surf, (int(abs_node_x + ox_lbl), int(abs_node_y + oy_lbl)))
+
+
+
 def serialize_canvas(app: Any) -> dict:
     """Serializes all playground components and connections into relative coordinates."""
     nodes_serialized = []
@@ -906,6 +1191,17 @@ def serialize_canvas(app: Any) -> dict:
                 "height": obj.height,
                 "color": list(obj.color) if obj.color else None
             })
+        elif isinstance(obj, NodeArray):
+            nodes_serialized.append({
+                "type": "array",
+                "label": obj.label,
+                "array_type": obj.array_type,
+                "array_size": obj.array_size,
+                "alignment": obj.alignment,
+                "x": obj.x,
+                "y": obj.y,
+                "value": obj.value
+            })
 
     connections_serialized = []
     for conn in app.connections:
@@ -921,6 +1217,14 @@ def serialize_canvas(app: Any) -> dict:
                     c_dict["linked_to"] = {
                         "type": "global",
                         "label": c.linked_node.label
+                    }
+                elif isinstance(c.linked_node, ArrayNode):
+                    arr = c.linked_node.parent
+                    idx = arr.nodes.index(c.linked_node)
+                    c_dict["linked_to"] = {
+                        "type": "array_pin",
+                        "array_label": arr.label,
+                        "pin_index": idx
                     }
                 elif isinstance(c.linked_node, ComponentSubNode):
                     gate = c.linked_node.parent
@@ -980,6 +1284,18 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
             out.custom_name = custom_name
             label_map[label] = out
             objects.append(out)
+        elif ntype == "array":
+            array_type = node_def["array_type"]
+            array_size = node_def["array_size"]
+            alignment = node_def["alignment"]
+            val = node_def.get("value", 0)
+            
+            arr = NodeArray(array_type, array_size, alignment, pos=(x, y), label_prefix=label)
+            arr.value = val
+            label_map[label] = arr
+            objects.append(arr)
+            for sub in arr.nodes:
+                objects.append(sub)
         elif ntype == "gate":
             gate_name = node_def["gate_name"]
             width = node_def["width"]
@@ -1015,6 +1331,12 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
                 ltype = linked_def["type"]
                 if ltype == "global":
                     linked_node = label_map.get(linked_def["label"])
+                elif ltype == "array_pin":
+                    arr = label_map.get(linked_def["array_label"])
+                    if arr:
+                        pidx = linked_def["pin_index"]
+                        if pidx < len(arr.nodes):
+                            linked_node = arr.nodes[pidx]
                 elif ltype == "gate_pin":
                     gate = label_map.get(linked_def["gate_label"])
                     if gate:

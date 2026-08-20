@@ -1,0 +1,73 @@
+[
+  {
+    "name": "BaseGates",
+    "color": [
+      180,
+      180,
+      180
+    ],
+    "components": [
+      "NOT",
+      "OR",
+      "AND",
+      "XOR",
+      "NAND",
+      "NOR"
+    ]
+  },
+  {
+    "name": "Adder",
+    "color": [
+      142,
+      0,
+      52
+    ],
+    "components": [
+      "1bit-FullAdder"
+    ]
+  },
+  {
+    "name": "Latches",
+    "color": [
+      219,
+      223,
+      80
+    ],
+    "components": [
+      "DLatch",
+      "Latch"
+    ]
+  },
+  {
+    "name": "Inputs",
+    "color": [
+      142,
+      68,
+      173
+    ],
+    "components": [
+      "Input Array 2H",
+      "Input Array 2V",
+      "Input Array 4H",
+      "Input Array 4V",
+      "Input Array 8H",
+      "Input Array 8V"
+    ]
+  },
+  {
+    "name": "Outputs",
+    "color": [
+      46,
+      204,
+      113
+    ],
+    "components": [
+      "Output Array 2H",
+      "Output Array 2V",
+      "Output Array 4H",
+      "Output Array 4V",
+      "Output Array 8H",
+      "Output Array 8V"
+    ]
+  }
+]

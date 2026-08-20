@@ -10,8 +10,9 @@ from mode.LogicGate.Nodes import GlobalInputNode, GlobalOutputNode
 def init_builder_mode(app: Any):
     """Initializes the Builder Mode variables by scanning the canvas."""
     # Find all inputs and outputs on the canvas, sorted alphabetically
-    app.builder_inputs = [obj for obj in app.objects if isinstance(obj, GlobalInputNode)]
-    app.builder_outputs = [obj for obj in app.objects if isinstance(obj, GlobalOutputNode)]
+    from mode.LogicGate.Nodes import GlobalInputNode, GlobalOutputNode, ArrayNode
+    app.builder_inputs = [obj for obj in app.objects if isinstance(obj, GlobalInputNode) or (isinstance(obj, ArrayNode) and obj.is_transmitter)]
+    app.builder_outputs = [obj for obj in app.objects if isinstance(obj, GlobalOutputNode) or (isinstance(obj, ArrayNode) and not obj.is_transmitter)]
     app.builder_inputs.sort(key=lambda n: n.label)
     app.builder_outputs.sort(key=lambda n: n.label)
 

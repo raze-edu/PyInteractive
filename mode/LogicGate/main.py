@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 # Add the project root directory to sys.path to allow running this script directly
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,13 +16,16 @@ from mode.LogicGate.Nodes import (
     ConnectorNode,
     Connection,
     LogicComponent,
-    ComponentSubNode
+    ComponentSubNode,
+    ArrayNode,
+    NodeArray
 )
 
 # Import module functions from absolute package paths
 from mode.LogicGate.sim import draw_sim, handle_sim_event, to_canvas
 from mode.LogicGate.gui import draw_gui, handle_gui_event, update_gui, load_gui_library
 from mode.LogicGate.builder import draw_builder, handle_builder_event, init_builder_mode
+from mode.LogicGate.manager import draw_manager, handle_manager_event
 
 class LogicGateApp(PygameApp):
     """The main Logic Gate Simulation and Builder Application."""
@@ -49,6 +53,9 @@ class LogicGateApp(PygameApp):
         self.bar_slide_ratio = 0.0
         self.bar_scroll_x = 0.0
         self.selected_placement_item = None
+        self.active_picker_group = None
+        self.editing_array_value_node = None
+        self.editing_array_value_str = ""
         
         # Left panel variables
         self.left_panel_open = False
@@ -56,6 +63,10 @@ class LogicGateApp(PygameApp):
         self.left_panel_scroll_y = 0.0
         self.editing_node = None
         self.editing_name = ""
+
+        # Groups overlay variables
+        self.groups = []
+        self.load_groups()
 
         # Load logic component template library
         self.gui_library = load_gui_library()
@@ -184,13 +195,105 @@ class LogicGateApp(PygameApp):
         self.clear_selection()
         init_builder_mode(self)
         self.mode = "builder"
+        self.active_picker_group = None
+
+    def load_groups(self):
+        """Loads logic component groups from the overlay JSON file."""
+        lib_dir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(lib_dir, 'LogicComponentGroups.json')
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    self.groups = json.load(f)
+            except Exception as e:
+                print(f"Error loading group overlay: {e}")
+                self.groups = []
+        else:
+            self.groups = []
+
+        # Ensure default "Inputs" and "Outputs" groups exist
+        has_inputs = any(g["name"] == "Inputs" for g in self.groups)
+        has_outputs = any(g["name"] == "Outputs" for g in self.groups)
+        
+        default_inputs = [
+            "Input Array 2H", "Input Array 2V",
+            "Input Array 4H", "Input Array 4V",
+            "Input Array 8H", "Input Array 8V"
+        ]
+        default_outputs = [
+            "Output Array 2H", "Output Array 2V",
+            "Output Array 4H", "Output Array 4V",
+            "Output Array 8H", "Output Array 8V"
+        ]
+        
+        changed = False
+        if not has_inputs:
+            self.groups.append({
+                "name": "Inputs",
+                "color": [142, 68, 173],
+                "components": default_inputs
+            })
+            changed = True
+        if not has_outputs:
+            self.groups.append({
+                "name": "Outputs",
+                "color": [46, 204, 113],
+                "components": default_outputs
+            })
+            changed = True
+            
+        if changed:
+            self.save_groups()
+
+    def save_groups(self):
+        """Saves logic component groups to the overlay JSON file and syncs it to the root."""
+        lib_dir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(lib_dir, 'LogicComponentGroups.json')
+        try:
+            with open(path, 'w') as f:
+                json.dump(self.groups, f, indent=2)
+        except Exception as e:
+            print(f"Error saving group overlay: {e}")
+
+        # Sync to root LogicComponentGroups.json
+        root_path = os.path.join(os.path.dirname(os.path.dirname(lib_dir)), 'LogicComponentGroups.json')
+        try:
+            with open(root_path, 'w') as f:
+                json.dump(self.groups, f, indent=2)
+        except Exception as e:
+            print(f"Error syncing group overlay to root: {e}")
+
+    def get_component_group_color(self, component_name: str) -> Optional[Tuple[int, int, int, int]]:
+        """Returns the assigned group color for a component if its group has a color assigned."""
+        for g in self.groups:
+            if component_name in g.get("components", []):
+                color = g.get("color")
+                if color:
+                    if len(color) == 3:
+                        return (color[0], color[1], color[2], 255)
+                    elif len(color) == 4:
+                        return (color[0], color[1], color[2], color[3])
+        return None
+
+    def switch_to_manager(self):
+        """Handles switching to Components Manager mode."""
+        self.clear_selection()
+        self.mode = "manager"
+        self.load_groups()
+        self.gui_library = load_gui_library()
+        self.manager_selected_group_idx = 0 if self.groups else -1
+        self.manager_editing_group_name = ""
+        self.manager_focus = None
+        self.active_picker_group = None
 
     def switch_to_sim(self):
-        """Handles switching from Builder mode back to Simulation mode."""
+        """Handles switching from other modes back to Simulation mode."""
         self.selected_placement_item = None
+        self.active_picker_group = None
         self.mode = "sim"
-        # Reload library templates
+        # Reload library templates and groups
         self.gui_library = load_gui_library()
+        self.load_groups()
 
     def handle_event(self, event: pygame.event.Event):
         """Delegates event routing based on the current active mode."""
@@ -225,6 +328,8 @@ class LogicGateApp(PygameApp):
 
         if self.mode == "builder":
             handle_builder_event(self, event)
+        elif self.mode == "manager":
+            handle_manager_event(self, event)
         else:
             # 1. First offer event to GUI (bottom picker/plus button)
             if handle_gui_event(self, event):
@@ -246,6 +351,20 @@ class LogicGateApp(PygameApp):
                         elif item["type"] == "output":
                             out = GlobalOutputNode(pos=rel_pos)
                             self.add_object(out)
+                        elif item["type"] == "array":
+                            try:
+                                name_parts = item["name"].split()
+                                array_type = name_parts[0].lower() # "input" or "output"
+                                size_align = name_parts[-1] # e.g. "4V"
+                                size = int(size_align[:-1])
+                                alignment = size_align[-1]
+                                
+                                arr = NodeArray(array_type, size, alignment, pos=rel_pos)
+                                self.add_object(arr)
+                                for node in arr.nodes:
+                                    self.add_object(node)
+                            except Exception as e:
+                                print(f"Error placing array: {e}")
                         elif item["type"] == "gate":
                             try:
                                 gate = LogicComponent.from_json(item["name"], pos=rel_pos)
@@ -295,9 +414,12 @@ class LogicGateApp(PygameApp):
             
             # Render hover bar UI on top
             draw_gui(self.screen, self)
-        else:
+        elif self.mode == "builder":
             # Render builder UI
             draw_builder(self.screen, self)
+        elif self.mode == "manager":
+            # Render manager UI
+            draw_manager(self.screen, self)
 
         # Draw left panel on top of all modes if slide ratio is greater than zero
         if getattr(self, "left_panel_slide_ratio", 0.0) > 0.0:
