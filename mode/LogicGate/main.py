@@ -256,8 +256,10 @@ class LogicGateApp(PygameApp):
                                     self.add_object(out)
                             except Exception as e:
                                 print(f"Error placing component from JSON: {e}")
-                        # Auto-deselect after placement to make stamping quick but clean
-                        self.selected_placement_item = None
+                        # Auto-deselect after placement to make stamping quick but clean unless Shift is held
+                        keys = pygame.key.get_pressed()
+                        if not (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]):
+                            self.selected_placement_item = None
                         return
 
             # 3. Fallback to normal canvas simulation events

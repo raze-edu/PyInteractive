@@ -60,12 +60,14 @@ class InteractiveNode:
             self.width = self.radius * 2
             self.height = self.radius * 2
         else:
-            self.x, self.y = pos  # representing relative top-left coords
+            # pos represents the relative center coordinate, so top-left self.x, self.y is pos - size / 2
             if isinstance(size, (int, float)):
                 self.width = size
                 self.height = size
             else:
                 self.width, self.height = size
+            self.x = pos[0] - self.width / 2.0
+            self.y = pos[1] - self.height / 2.0
             self.radius = min(self.width, self.height) / 2
             
         self._state = state
@@ -367,6 +369,7 @@ class ComponentSubNode(InteractiveNode):
             state=False
         )
         self._evaluating = False
+        self._last_state = False
 
     @property
     def x(self) -> float:
@@ -393,15 +396,18 @@ class ComponentSubNode(InteractiveNode):
     @property
     def state(self) -> bool:
         if getattr(self, "_evaluating", False):
-            return False
+            return getattr(self, "_last_state", False)
         self._evaluating = True
         try:
             if self.is_transmitter:
-                return self.parent.get_output_state(self)
+                val = self.parent.get_output_state(self)
             else:
                 if self.connection is not None:
-                    return self.connection.state
-                return getattr(self, "_state", False)
+                    val = self.connection.state
+                else:
+                    val = getattr(self, "_state", False)
+            self._last_state = val
+            return val
         finally:
             self._evaluating = False
 
@@ -754,11 +760,17 @@ class LogicComponent(InteractiveNode):
             height_rel = height
 
         # Convert position
-        instance_pos_abs = (data.get("x", pos[0]), data.get("y", pos[1]))
-        if instance_pos_abs[0] > 1.0 or instance_pos_abs[1] > 1.0:
-            instance_pos = (instance_pos_abs[0] / 1920.0, instance_pos_abs[1] / 1080.0)
+        instance_pos_abs = (data.get("x"), data.get("y"))
+        if instance_pos_abs[0] is not None and instance_pos_abs[1] is not None:
+            if instance_pos_abs[0] > 1.0 or instance_pos_abs[1] > 1.0:
+                tl_x = instance_pos_abs[0] / 1920.0
+                tl_y = instance_pos_abs[1] / 1080.0
+            else:
+                tl_x = instance_pos_abs[0]
+                tl_y = instance_pos_abs[1]
+            instance_pos = (tl_x + width_rel / 2.0, tl_y + height_rel / 2.0)
         else:
-            instance_pos = instance_pos_abs
+            instance_pos = pos
 
         # Convert pin configurations
         inputs_def = []
@@ -958,7 +970,13 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
             label_map[label] = inp
             objects.append(inp)
         elif ntype == "output":
-            out = GlobalOutputNode(pos=(x, y))
+            shape = shared_style.get_shape("output_node_shape", "rectangle")
+            size = shared_style.get_size("output_node_size", 0.026)
+            if shape == "rectangle":
+                center_pos = (x + size / 2.0, y + size / 2.0)
+            else:
+                center_pos = (x, y)
+            out = GlobalOutputNode(pos=center_pos)
             out.custom_name = custom_name
             label_map[label] = out
             objects.append(out)
@@ -970,7 +988,8 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
             if color:
                 color = tuple(color)
             
-            gate = LogicComponent.from_json(gate_name, pos=(x, y))
+            center_pos = (x + width / 2.0, y + height / 2.0)
+            gate = LogicComponent.from_json(gate_name, pos=center_pos)
             gate.width = width
             gate.height = height
             if color:

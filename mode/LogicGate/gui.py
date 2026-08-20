@@ -453,8 +453,8 @@ def handle_left_panel_event(app: Any, event: pygame.event.Event) -> bool:
                         # Center & select on canvas if in sym mode
                         if app.mode == "sim":
                             screen_w = app.screen.get_width()
-                            app.offset[0] = screen_w / 2.0 - clicked_node.center[0]
-                            app.offset[1] = screen_h / 2.0 - clicked_node.center[1]
+                            app.offset[0] = screen_w / 2.0 - clicked_node.center[0] * screen_w
+                            app.offset[1] = screen_h / 2.0 - clicked_node.center[1] * screen_h
                             app.select_node(clicked_node)
                         return True
             return True # Consume click inside left panel width area

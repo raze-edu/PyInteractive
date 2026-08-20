@@ -98,6 +98,7 @@ class Connection:
         """Renders the connection lines on the screen converted to absolute positions."""
         pos_map = {c.id: c.pos for c in self.connector_nodes}
         canvas_w, canvas_h = screen.get_size()
+        ox, oy = getattr(app, "offset", (0.0, 0.0))
         
         # Colors: Use Style colors
         active_color = shared_style.get_color("connection_active", (0, 255, 240, 255))
@@ -115,8 +116,8 @@ class Connection:
             p1_rel = pos_map[id1]
             p2_rel = pos_map[id2]
             
-            p1 = (int(p1_rel[0] * canvas_w), int(p1_rel[1] * canvas_h))
-            p2 = (int(p2_rel[0] * canvas_w), int(p2_rel[1] * canvas_h))
+            p1 = (int(p1_rel[0] * canvas_w + ox), int(p1_rel[1] * canvas_h + oy))
+            p2 = (int(p2_rel[0] * canvas_w + ox), int(p2_rel[1] * canvas_h + oy))
             
             # Check if this line is selected (in either direction)
             is_selected = (self.selected_line == (id1, id2) or self.selected_line == (id2, id1))
