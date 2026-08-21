@@ -46,6 +46,7 @@ class LogicGateApp(PygameApp):
         
         # Viewport offsets
         self.offset = [0.0, 0.0]
+        self.zoom_scale = 1.0
         self.is_panning = False
         self.pan_start_pos = (0.0, 0.0)
 
@@ -56,6 +57,7 @@ class LogicGateApp(PygameApp):
         self.active_picker_group = None
         self.editing_array_value_node = None
         self.editing_array_value_str = ""
+        self.show_help = False
         
         # Left panel variables
         self.left_panel_open = False
@@ -303,6 +305,22 @@ class LogicGateApp(PygameApp):
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.is_running = False
             return
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
+            self.show_help = not getattr(self, "show_help", False)
+            return
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button in (4, 5):
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_SPACE]:
+                mx, my = event.pos
+                z_old = self.zoom_scale
+                if event.button == 4: # Zoom in
+                    self.zoom_scale = min(4.0, z_old * 1.15)
+                else: # Zoom out
+                    self.zoom_scale = max(0.25, z_old / 1.15)
+                z_ratio = self.zoom_scale / z_old
+                self.offset[0] = mx - (mx - self.offset[0]) * z_ratio
+                self.offset[1] = my - (my - self.offset[1]) * z_ratio
+                return
             
         # Toggle left panel on F2 key
         if event.type == pygame.KEYDOWN and event.key == pygame.K_F2:
@@ -342,7 +360,7 @@ class LogicGateApp(PygameApp):
                     screen_w = self.screen.get_width()
                     screen_h = self.screen.get_height()
                     if event.pos[1] < screen_h - 110:
-                        canvas_pos = to_canvas(event.pos, self.offset)
+                        canvas_pos = to_canvas(event.pos, self.offset, getattr(self, "zoom_scale", 1.0))
                         rel_pos = (canvas_pos[0] / screen_w, canvas_pos[1] / screen_h)
                         item = self.selected_placement_item
                         if item["type"] == "input":
@@ -436,26 +454,29 @@ class LogicGateApp(PygameApp):
             font = pygame.font.SysFont("arial", 22)
             title_font = pygame.font.SysFont("arial", 28)
             
-        title_surf = title_font.render("Logic Gate Simulator & Builder", True, self.get_color("primary"))
+        show_help = getattr(self, "show_help", False)
+        title_text = "Logic Gate Simulator & Builder (Press F1 to hide instructions)" if show_help else "Logic Gate Simulator & Builder (Press F1 for help)"
+        title_surf = title_font.render(title_text, True, self.get_color("primary"))
         self.screen.blit(title_surf, ((screen_w - title_surf.get_width()) // 2, 15))
 
-        instructions = [
-            "SPACE + DRAG: Pan the simulation viewport canvas",
-            "LEFT CLICK: Select Node / Toggle Input Node state / Click Connector node",
-            "DRAG NODE: Click and drag any node, sub-node, or connector to reposition",
-            "CTRL + CLICK: Draw wire connection from selected point to empty space/node/connector",
-            "CTRL + CLICK on wire line: Splits the wire segment",
-            "DELETE KEY: Remove the selected node, wire segment, or connector",
-            "F2 KEY: Toggle Left Nodes panel (scrollable, click to center/edit name)",
-            "Hover mouse at bottom edge to pick components | Click '+' in top-right to build new gate",
-            "ESC to Exit"
-        ]
-        
-        y_offset = 45
-        for inst in instructions:
-            inst_surf = font.render(inst, True, self.get_color("node_text", (240, 240, 245)))
-            self.screen.blit(inst_surf, ((screen_w - inst_surf.get_width()) // 2, y_offset))
-            y_offset += 20
+        if show_help:
+            instructions = [
+                "SPACE + DRAG: Pan the simulation viewport canvas",
+                "LEFT CLICK: Select Node / Toggle Input Node state / Click Connector node",
+                "DRAG NODE: Click and drag any node, sub-node, or connector to reposition",
+                "CTRL + CLICK: Draw wire connection from selected point to empty space/node/connector",
+                "CTRL + CLICK on wire line: Splits the wire segment",
+                "DELETE KEY: Remove the selected node, wire segment, or connector",
+                "F2 KEY: Toggle Left Nodes panel (scrollable, click to center/edit name)",
+                "Hover mouse at bottom edge to pick components | Click '+' in top-right to build new gate",
+                "ESC to Exit"
+            ]
+            
+            y_offset = 45
+            for inst in instructions:
+                inst_surf = font.render(inst, True, self.get_color("node_text", (240, 240, 245)))
+                self.screen.blit(inst_surf, ((screen_w - inst_surf.get_width()) // 2, y_offset))
+                y_offset += 20
 
 def main():
     print("Launching Integrated Logic Gate Simulator & Builder...")

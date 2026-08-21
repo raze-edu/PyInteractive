@@ -75,7 +75,11 @@
       "connection_active_thickness": 4,
       "connection_inactive_thickness": 2,
       "glow_radius_multiplier": 1.5,
-      "connector_handle_radius": 6
+      "connector_handle_radius": 6,
+      "font_size_global": 14,
+      "font_size_component": 16,
+      "font_size_subnode": 12,
+      "font_size_array": 12
     },
     "shapes": {
       "input_node_shape": "circle",

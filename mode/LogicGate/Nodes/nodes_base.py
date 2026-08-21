@@ -194,11 +194,12 @@ class InteractiveNode:
 
         canvas_w, canvas_h = screen.get_size()
         ox, oy = getattr(app, "offset", (0.0, 0.0))
-        cx = self.center[0] * canvas_w + ox
-        cy = self.center[1] * canvas_h + oy
-        abs_r = self.radius * canvas_w
-        abs_w = self.width * canvas_w
-        abs_h = self.height * canvas_h
+        zoom = getattr(app, "zoom_scale", 1.0)
+        cx = (self.center[0] * canvas_w) * zoom + ox
+        cy = (self.center[1] * canvas_h) * zoom + oy
+        abs_r = self.radius * canvas_w * zoom
+        abs_w = self.width * canvas_w * zoom
+        abs_h = self.height * canvas_h * zoom
 
         active_fill = shared_style.get_color("node_active_fill", (46, 204, 113, 255))
         inactive_fill = shared_style.get_color("node_inactive_fill", (70, 70, 75, 255))
@@ -216,7 +217,7 @@ class InteractiveNode:
             if self.shape == "circle":
                 pygame.draw.circle(screen, sel_color[:3], (int(cx), int(cy)), int(abs_r) + 4, 3)
             else:
-                rect_sel = pygame.Rect(int(self.x * canvas_w + ox) - 4, int(self.y * canvas_h + oy) - 4, int(abs_w) + 8, int(abs_h) + 8)
+                rect_sel = pygame.Rect(int((self.x * canvas_w) * zoom + ox) - 4, int((self.y * canvas_h) * zoom + oy) - 4, int(abs_w) + 8, int(abs_h) + 8)
                 try:
                     pygame.draw.rect(screen, sel_color[:3], rect_sel, 3, border_radius=8)
                 except TypeError:
@@ -240,7 +241,7 @@ class InteractiveNode:
             pygame.draw.circle(screen, fill_color[:3], (int(cx), int(cy)), int(abs_r))
             pygame.draw.circle(screen, border_color[:3], (int(cx), int(cy)), int(abs_r), 2)
         else:
-            rect_obj = pygame.Rect(int(self.x * canvas_w + ox), int(self.y * canvas_h + oy), int(abs_w), int(abs_h))
+            rect_obj = pygame.Rect(int((self.x * canvas_w) * zoom + ox), int((self.y * canvas_h) * zoom + oy), int(abs_w), int(abs_h))
             try:
                 pygame.draw.rect(screen, fill_color[:3], rect_obj, border_radius=6)
                 pygame.draw.rect(screen, border_color[:3], rect_obj, 2, border_radius=6)
@@ -248,19 +249,40 @@ class InteractiveNode:
                 pygame.draw.rect(screen, fill_color[:3], rect_obj)
                 pygame.draw.rect(screen, border_color[:3], rect_obj, 2)
 
-        # Draw Label Text centered
-        if not pygame.font.get_init():
-            pygame.font.init()
-        font_h = int(abs_r * 1.0) if self.shape == "circle" else int(abs_h * 0.55)
-        try:
-            font = pygame.font.Font(None, max(12, font_h))
-        except Exception:
-            font = pygame.font.SysFont("arial", max(12, font_h))
+    def draw_labels(self, screen: pygame.Surface, app: Any) -> None:
+        """Renders the node label on top of other elements if hovered or F3 held."""
+        show_label = False
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_F3]:
+            show_label = True
+        else:
+            mx, my = pygame.mouse.get_pos()
+            from mode.LogicGate.sim import to_canvas
+            zoom = getattr(app, "zoom_scale", 1.0)
+            m_canvas = to_canvas((mx, my), getattr(app, "offset", (0.0, 0.0)), zoom)
+            if self.collidepoint(m_canvas, screen.get_size()):
+                show_label = True
+
+        if show_label:
+            if not pygame.font.get_init():
+                pygame.font.init()
+            font_size = shared_style.get_size("font_size_global", 14)
+            try:
+                font = pygame.font.Font(None, font_size)
+            except Exception:
+                font = pygame.font.SysFont("arial", font_size)
             
-        text_surf = font.render(self.label, True, text_color[:3])
-        tx = cx - text_surf.get_width() / 2.0
-        ty = cy - text_surf.get_height() / 2.0
-        screen.blit(text_surf, (int(tx), int(ty)))
+            canvas_w, canvas_h = screen.get_size()
+            ox, oy = getattr(app, "offset", (0.0, 0.0))
+            zoom = getattr(app, "zoom_scale", 1.0)
+            cx = (self.center[0] * canvas_w) * zoom + ox
+            cy = (self.center[1] * canvas_h) * zoom + oy
+
+            text_color = shared_style.get_color("node_text", (240, 240, 245, 255))
+            text_surf = font.render(self.label, True, text_color[:3])
+            tx = cx - text_surf.get_width() / 2.0
+            ty = cy - text_surf.get_height() / 2.0
+            screen.blit(text_surf, (int(tx), int(ty)))
 
 
 class GlobalInputNode(InteractiveNode):
@@ -422,9 +444,10 @@ class ComponentSubNode(InteractiveNode):
 
         canvas_w, canvas_h = screen.get_size()
         ox, oy = getattr(app, "offset", (0.0, 0.0))
-        cx = self.center[0] * canvas_w + ox
-        cy = self.center[1] * canvas_h + oy
-        abs_r = self.radius * canvas_w
+        zoom = getattr(app, "zoom_scale", 1.0)
+        cx = (self.center[0] * canvas_w) * zoom + ox
+        cy = (self.center[1] * canvas_h) * zoom + oy
+        abs_r = self.radius * canvas_w * zoom
 
         active_fill = shared_style.get_color("node_active_fill", (46, 204, 113, 255))
         inactive_fill = shared_style.get_color("node_inactive_fill", (70, 70, 75, 255))
@@ -443,8 +466,8 @@ class ComponentSubNode(InteractiveNode):
         dy = pc_y - self.rel_y
         
         # Scale to canvas size for correct aspect ratio vector
-        dx_abs = dx * canvas_w
-        dy_abs = dy * canvas_h
+        dx_abs = dx * canvas_w * zoom
+        dy_abs = dy * canvas_h * zoom
         length = math.hypot(dx_abs, dy_abs)
         if length > 0:
             ux, uy = dx_abs / length, dy_abs / length
@@ -649,10 +672,11 @@ class LogicComponent(InteractiveNode):
         """Renders the component's rectangular body, name, and inside node labels."""
         canvas_w, canvas_h = screen.get_size()
         ox, oy = getattr(app, "offset", (0.0, 0.0))
-        abs_x = self.x * canvas_w + ox
-        abs_y = self.y * canvas_h + oy
-        abs_w = self.width * canvas_w
-        abs_h = self.height * canvas_h
+        zoom = getattr(app, "zoom_scale", 1.0)
+        abs_x = (self.x * canvas_w) * zoom + ox
+        abs_y = (self.y * canvas_h) * zoom + oy
+        abs_w = self.width * canvas_w * zoom
+        abs_h = self.height * canvas_h * zoom
 
         group_color = app.get_component_group_color(self.label_prefix)
         bg_fill = group_color if group_color is not None else (self.color if self.color else shared_style.get_color("logic_component_fill", (142, 68, 173, 255)))
@@ -679,11 +703,11 @@ class LogicComponent(InteractiveNode):
         # Draw Component Name centered inside the body
         if not pygame.font.get_init():
             pygame.font.init()
-        font_h = int(abs_h * 0.35)
+        font_size = shared_style.get_size("font_size_component", 16)
         try:
-            font = pygame.font.Font(None, max(14, font_h))
+            font = pygame.font.Font(None, font_size)
         except Exception:
-            font = pygame.font.SysFont("arial", max(14, font_h))
+            font = pygame.font.SysFont("arial", font_size)
             
         text_surf = font.render(self.label_prefix, True, (255, 255, 255))
         cx = abs_x + abs_w / 2.0
@@ -692,29 +716,61 @@ class LogicComponent(InteractiveNode):
         ty = cy - text_surf.get_height() / 2.0
         screen.blit(text_surf, (int(tx), int(ty)))
 
-        # Draw inside labels for the sub-nodes
+    def draw_labels(self, screen: pygame.Surface, app: Any) -> None:
+        """Renders inside input/output sub-node labels on top of other elements conditionally."""
+        canvas_w, canvas_h = screen.get_size()
+        ox, oy = getattr(app, "offset", (0.0, 0.0))
+        zoom = getattr(app, "zoom_scale", 1.0)
+        
+        if not pygame.font.get_init():
+            pygame.font.init()
+        font_size = shared_style.get_size("font_size_subnode", 12)
         try:
-            label_font = pygame.font.Font(None, max(12, int(abs_h * 0.25)))
+            label_font = pygame.font.Font(None, font_size)
         except Exception:
-            label_font = pygame.font.SysFont("arial", max(12, int(abs_h * 0.25)))
-            
+            label_font = pygame.font.SysFont("arial", font_size)
+
         # Draw input sub-node labels
         for inp in self.inputs:
-            lbl_surf = label_font.render(inp.label, True, (220, 220, 225))
-            ox_lbl = 10 if inp.rel_x < self.width / 2 else -10 - lbl_surf.get_width()
-            oy_lbl = -lbl_surf.get_height() / 2
-            abs_inp_x = inp.x * canvas_w + ox
-            abs_inp_y = inp.y * canvas_h + oy
-            screen.blit(lbl_surf, (int(abs_inp_x + ox_lbl), int(abs_inp_y + oy_lbl)))
+            show_label = False
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_F3]:
+                show_label = True
+            else:
+                mx, my = pygame.mouse.get_pos()
+                from mode.LogicGate.sim import to_canvas
+                m_canvas = to_canvas((mx, my), getattr(app, "offset", (0.0, 0.0)), zoom)
+                if inp.collidepoint(m_canvas, screen.get_size()):
+                    show_label = True
+                    
+            if show_label:
+                lbl_surf = label_font.render(inp.label, True, (220, 220, 225))
+                ox_lbl = 10 if inp.rel_x < self.width / 2 else -10 - lbl_surf.get_width()
+                oy_lbl = -lbl_surf.get_height() / 2
+                abs_inp_x = (inp.x * canvas_w) * zoom + ox
+                abs_inp_y = (inp.y * canvas_h) * zoom + oy
+                screen.blit(lbl_surf, (int(abs_inp_x + ox_lbl), int(abs_inp_y + oy_lbl)))
 
         # Draw output sub-node labels
         for out in self.outputs:
-            lbl_surf = label_font.render(out.label, True, (220, 220, 225))
-            ox_lbl = 10 if out.rel_x < self.width / 2 else -10 - lbl_surf.get_width()
-            oy_lbl = -lbl_surf.get_height() / 2
-            abs_out_x = out.x * canvas_w + ox
-            abs_out_y = out.y * canvas_h + oy
-            screen.blit(lbl_surf, (int(abs_out_x + ox_lbl), int(abs_out_y + oy_lbl)))
+            show_label = False
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_F3]:
+                show_label = True
+            else:
+                mx, my = pygame.mouse.get_pos()
+                from mode.LogicGate.sim import to_canvas
+                m_canvas = to_canvas((mx, my), getattr(app, "offset", (0.0, 0.0)), zoom)
+                if out.collidepoint(m_canvas, screen.get_size()):
+                    show_label = True
+                    
+            if show_label:
+                lbl_surf = label_font.render(out.label, True, (220, 220, 225))
+                ox_lbl = 10 if out.rel_x < self.width / 2 else -10 - lbl_surf.get_width()
+                oy_lbl = -lbl_surf.get_height() / 2
+                abs_out_x = (out.x * canvas_w) * zoom + ox
+                abs_out_y = (out.y * canvas_h) * zoom + oy
+                screen.blit(lbl_surf, (int(abs_out_x + ox_lbl), int(abs_out_y + oy_lbl)))
 
     @classmethod
     def from_json(cls, source: Union[str, dict], pos: Tuple[float, float] = (0.1, 0.1)) -> "LogicComponent":
@@ -937,9 +993,10 @@ class ArrayNode(ComponentSubNode):
 
         canvas_w, canvas_h = screen.get_size()
         ox, oy = getattr(app, "offset", (0.0, 0.0))
-        cx = self.center[0] * canvas_w + ox
-        cy = self.center[1] * canvas_h + oy
-        abs_r = self.radius * canvas_w
+        zoom = getattr(app, "zoom_scale", 1.0)
+        cx = (self.center[0] * canvas_w) * zoom + ox
+        cy = (self.center[1] * canvas_h) * zoom + oy
+        abs_r = self.radius * canvas_w * zoom
 
         active_fill = shared_style.get_color("node_active_fill", (46, 204, 113, 255))
         inactive_fill = shared_style.get_color("node_inactive_fill", (70, 70, 75, 255))
@@ -1074,10 +1131,11 @@ class NodeArray(InteractiveNode):
     def draw(self, screen: pygame.Surface, app: Any) -> None:
         canvas_w, canvas_h = screen.get_size()
         ox, oy = getattr(app, "offset", (0.0, 0.0))
-        abs_x = self.x * canvas_w + ox
-        abs_y = self.y * canvas_h + oy
-        abs_w = self.width * canvas_w
-        abs_h = self.height * canvas_h
+        zoom = getattr(app, "zoom_scale", 1.0)
+        abs_x = (self.x * canvas_w) * zoom + ox
+        abs_y = (self.y * canvas_h) * zoom + oy
+        abs_w = self.width * canvas_w * zoom
+        abs_h = self.height * canvas_h * zoom
 
         group_color = app.get_component_group_color(self.label)
         if group_color is None:
@@ -1107,11 +1165,11 @@ class NodeArray(InteractiveNode):
         if not pygame.font.get_init():
             pygame.font.init()
         
-        font_h = int(min(abs_w, abs_h) * 0.3)
+        font_size = shared_style.get_size("font_size_array", 12)
         try:
-            font = pygame.font.Font(None, max(14, font_h))
+            font = pygame.font.Font(None, font_size)
         except Exception:
-            font = pygame.font.SysFont("arial", max(14, font_h))
+            font = pygame.font.SysFont("arial", font_size)
 
         is_editing = getattr(app, "editing_array_value_node", None) is self
         cursor = "|" if is_editing and (pygame.time.get_ticks() // 500) % 2 == 0 else ""
@@ -1137,25 +1195,46 @@ class NodeArray(InteractiveNode):
             vy = abs_y + abs_h / 2.0 - val_text.get_height() / 2.0
             screen.blit(val_text, (int(vx), int(vy)))
 
+    def draw_labels(self, screen: pygame.Surface, app: Any) -> None:
+        """Renders individual array member node labels on top of other elements conditionally."""
+        canvas_w, canvas_h = screen.get_size()
+        ox, oy = getattr(app, "offset", (0.0, 0.0))
+        zoom = getattr(app, "zoom_scale", 1.0)
+        
+        if not pygame.font.get_init():
+            pygame.font.init()
+        font_size = shared_style.get_size("font_size_array", 12)
         try:
-            label_font = pygame.font.Font(None, max(12, int(min(abs_w, abs_h) * 0.2)))
+            label_font = pygame.font.Font(None, font_size)
         except Exception:
-            label_font = pygame.font.SysFont("arial", max(12, int(min(abs_w, abs_h) * 0.2)))
+            label_font = pygame.font.SysFont("arial", font_size)
 
         for node in self.nodes:
-            display_name = node.custom_name if node.custom_name else node._custom_label
-            lbl_surf = label_font.render(display_name, True, (220, 220, 225))
-            abs_node_x = node.x * canvas_w + ox
-            abs_node_y = node.y * canvas_h + oy
-            
-            if self.alignment == "V":
-                ox_lbl = -14 - lbl_surf.get_width() if self.array_type == "input" else 14
-                oy_lbl = -lbl_surf.get_height() / 2
+            show_label = False
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_F3]:
+                show_label = True
             else:
-                ox_lbl = -lbl_surf.get_width() / 2
-                oy_lbl = -14 - lbl_surf.get_height() if self.array_type == "input" else 14
+                mx, my = pygame.mouse.get_pos()
+                from mode.LogicGate.sim import to_canvas
+                m_canvas = to_canvas((mx, my), getattr(app, "offset", (0.0, 0.0)), zoom)
+                if node.collidepoint(m_canvas, screen.get_size()):
+                    show_label = True
+                    
+            if show_label:
+                display_name = node.custom_name if node.custom_name else node._custom_label
+                lbl_surf = label_font.render(display_name, True, (220, 220, 225))
+                abs_node_x = (node.x * canvas_w) * zoom + ox
+                abs_node_y = (node.y * canvas_h) * zoom + oy
                 
-            screen.blit(lbl_surf, (int(abs_node_x + ox_lbl), int(abs_node_y + oy_lbl)))
+                if self.alignment == "V":
+                    ox_lbl = -14 - lbl_surf.get_width() if self.array_type == "input" else 14
+                    oy_lbl = -lbl_surf.get_height() / 2
+                else:
+                    ox_lbl = -lbl_surf.get_width() / 2
+                    oy_lbl = -14 - lbl_surf.get_height() if self.array_type == "input" else 14
+                    
+                screen.blit(lbl_surf, (int(abs_node_x + ox_lbl), int(abs_node_y + oy_lbl)))
 
 
 

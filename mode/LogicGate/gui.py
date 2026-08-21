@@ -109,7 +109,7 @@ def draw_gui(screen: pygame.Surface, app: Any):
     # 1b. Draw top-right transition Manage button
     manage_btn_rect = pygame.Rect(screen_w - 150, 20, 80, 40)
     hover_manage = manage_btn_rect.collidepoint(mouse_pos)
-    manage_btn_color = app.get_color("secondary", (155, 89, 182, 255))
+    manage_btn_color = app.get_color("primary", (142, 68, 173, 255))
     if hover_manage:
         manage_btn_color = (min(255, manage_btn_color[0] + 30), min(255, manage_btn_color[1] + 30), min(255, manage_btn_color[2] + 30), 255)
     try:
@@ -123,6 +123,24 @@ def draw_gui(screen: pygame.Surface, app: Any):
         font_manage = pygame.font.SysFont("arial", 22)
     manage_surf = font_manage.render("Manage", True, (255, 255, 255))
     screen.blit(manage_surf, (manage_btn_rect.centerx - manage_surf.get_width() / 2, manage_btn_rect.centery - manage_surf.get_height() / 2))
+
+    # 1c. Draw top-right Clear button
+    clear_btn_rect = pygame.Rect(screen_w - 240, 20, 80, 40)
+    hover_clear = clear_btn_rect.collidepoint(mouse_pos)
+    clear_btn_color = (231, 76, 60, 255)
+    if hover_clear:
+        clear_btn_color = (min(255, clear_btn_color[0] + 30), min(255, clear_btn_color[1] + 30), min(255, clear_btn_color[2] + 30), 255)
+    try:
+        pygame.draw.rect(screen, clear_btn_color[:3], clear_btn_rect, border_radius=8)
+    except TypeError:
+        pygame.draw.rect(screen, clear_btn_color[:3], clear_btn_rect)
+
+    try:
+        font_clear = pygame.font.Font(None, 22)
+    except Exception:
+        font_clear = pygame.font.SysFont("arial", 22)
+    clear_surf = font_clear.render("Clear", True, (255, 255, 255))
+    screen.blit(clear_surf, (clear_btn_rect.centerx - clear_surf.get_width() / 2, clear_btn_rect.centery - clear_surf.get_height() / 2))
 
     # 2. Draw floating placement preview if an item is selected
     if app.selected_placement_item is not None:
@@ -347,12 +365,22 @@ def handle_gui_event(app: Any, event: pygame.event.Event) -> bool:
     # 1. Check top-right Builder transition button click
     btn_rect = pygame.Rect(screen_w - 60, 20, 40, 40)
     manage_btn_rect = pygame.Rect(screen_w - 150, 20, 80, 40)
+    clear_btn_rect = pygame.Rect(screen_w - 240, 20, 80, 40)
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         if btn_rect.collidepoint(event.pos):
             app.switch_to_builder()
             return True
         elif manage_btn_rect.collidepoint(event.pos):
             app.switch_to_manager()
+            return True
+        elif clear_btn_rect.collidepoint(event.pos):
+            # Clear all objects and connections
+            app.objects.clear()
+            app.connections.clear()
+            from mode.LogicGate.Nodes import NodeRegistry
+            NodeRegistry._nodes.clear()
+            app.clear_selection()
+            app.editing_array_value_node = None
             return True
 
     # 2. Check bottom hover bar click events

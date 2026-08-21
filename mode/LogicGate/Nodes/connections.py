@@ -109,6 +109,7 @@ class Connection:
         default_inactive_th = shared_style.get_size("connection_inactive_thickness", 2)
         thickness = default_active_th if self.state else default_inactive_th
 
+        zoom = getattr(app, "zoom_scale", 1.0)
         for id1, id2 in self.lines:
             if id1 not in pos_map or id2 not in pos_map:
                 continue
@@ -116,17 +117,19 @@ class Connection:
             p1_rel = pos_map[id1]
             p2_rel = pos_map[id2]
             
-            p1 = (int(p1_rel[0] * canvas_w + ox), int(p1_rel[1] * canvas_h + oy))
-            p2 = (int(p2_rel[0] * canvas_w + ox), int(p2_rel[1] * canvas_h + oy))
+            p1 = (int((p1_rel[0] * canvas_w) * zoom + ox), int((p1_rel[1] * canvas_h) * zoom + oy))
+            p2 = (int((p2_rel[0] * canvas_w) * zoom + ox), int((p2_rel[1] * canvas_h) * zoom + oy))
             
             # Check if this line is selected (in either direction)
             is_selected = (self.selected_line == (id1, id2) or self.selected_line == (id2, id1))
             if is_selected:
                 line_color = shared_style.get_color("connection_selected", (255, 220, 0, 255))
-                line_thickness = thickness + 3
+                line_thickness = int((thickness + 3) * zoom)
             else:
                 line_color = color
-                line_thickness = thickness
+                line_thickness = int(thickness * zoom)
+            
+            line_thickness = max(1, line_thickness)
 
             pygame.draw.line(screen, line_color[:3], p1, p2, line_thickness)
 
