@@ -23,7 +23,9 @@
       52
     ],
     "components": [
-      "1bit-FullAdder"
+      "1bit-FullAdder",
+      "4bit_FullAdder",
+      "8bit_FullAdder"
     ]
   },
   {

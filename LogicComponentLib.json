@@ -132492,5 +132492,813 @@
       "11111111111111110": "101111111",
       "11111111111111111": "111111111"
     }
+  },
+  {
+    "name": "4bit_FullAdder",
+    "width": 119,
+    "height": 170,
+    "color": [
+      142,
+      68,
+      173,
+      255
+    ],
+    "inputs": [
+      {
+        "name": "A_0",
+        "rel_x": 0,
+        "rel_y": 6,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "A_1",
+        "rel_x": 0,
+        "rel_y": 23,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "A_2",
+        "rel_x": 0,
+        "rel_y": 41,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "A_3",
+        "rel_x": 0,
+        "rel_y": 59,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "B_0",
+        "rel_x": 0,
+        "rel_y": 114,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "B_1",
+        "rel_x": 0,
+        "rel_y": 131,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "B_2",
+        "rel_x": 0,
+        "rel_y": 148,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "B_3",
+        "rel_x": 0,
+        "rel_y": 164,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Cin",
+        "rel_x": 58,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Cout",
+        "rel_x": 64,
+        "rel_y": 170,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Q_0",
+        "rel_x": 119,
+        "rel_y": 36,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Q_1",
+        "rel_x": 119,
+        "rel_y": 72,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Q_2",
+        "rel_x": 119,
+        "rel_y": 101,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Q_3",
+        "rel_x": 119,
+        "rel_y": 137,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      }
+    ],
+    "type": "composite",
+    "inner_circuit": {
+      "nodes": [
+        {
+          "type": "gate",
+          "label": "1bit-FullAdder1",
+          "gate_name": "1bit-FullAdder",
+          "x": 0.3953125,
+          "y": 0.6574074074074074,
+          "width": 0.078125,
+          "height": 0.08333333333333333,
+          "color": [
+            210,
+            110,
+            90,
+            255
+          ]
+        },
+        {
+          "type": "gate",
+          "label": "1bit-FullAdder2",
+          "gate_name": "1bit-FullAdder",
+          "x": 0.39479166666666665,
+          "y": 0.5453703703703704,
+          "width": 0.078125,
+          "height": 0.08333333333333333,
+          "color": [
+            210,
+            110,
+            90,
+            255
+          ]
+        },
+        {
+          "type": "gate",
+          "label": "1bit-FullAdder3",
+          "gate_name": "1bit-FullAdder",
+          "x": 0.39427083333333335,
+          "y": 0.4334541062801933,
+          "width": 0.078125,
+          "height": 0.08333333333333333,
+          "color": [
+            210,
+            110,
+            90,
+            255
+          ]
+        },
+        {
+          "type": "gate",
+          "label": "1bit-FullAdder4",
+          "gate_name": "1bit-FullAdder",
+          "x": 0.3942708333333333,
+          "y": 0.3222222222222222,
+          "width": 0.078125,
+          "height": 0.08333333333333333,
+          "color": [
+            210,
+            110,
+            90,
+            255
+          ]
+        },
+        {
+          "type": "array",
+          "label": "A",
+          "array_type": "input",
+          "array_size": 4,
+          "alignment": "V",
+          "x": 0.22083333333333338,
+          "y": 0.3166666666666667,
+          "value": 9
+        },
+        {
+          "type": "array",
+          "label": "B",
+          "array_type": "input",
+          "array_size": 4,
+          "alignment": "V",
+          "x": 0.21875000000000003,
+          "y": 0.5791465378421903,
+          "value": 7
+        },
+        {
+          "type": "array",
+          "label": "Q",
+          "array_type": "output",
+          "array_size": 4,
+          "alignment": "V",
+          "x": 0.6369791666666665,
+          "y": 0.4564814814814815,
+          "value": 0
+        },
+        {
+          "type": "input",
+          "label": "Cin",
+          "custom_name": "Cin",
+          "x": 0.43437499999999996,
+          "y": 0.8324074074074074
+        },
+        {
+          "type": "output",
+          "label": "Cout",
+          "custom_name": "Cout",
+          "x": 0.43385416666666665,
+          "y": 0.24351851851851852
+        }
+      ],
+      "connections": [
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Cout_35910_1994856971248",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder2",
+                "pin_type": "output",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_Cin_35910_1994922132400",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder3",
+                "pin_type": "input",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Cout_35910_1994856971248",
+              "c_Cin_35910_1994922132400"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_I1_156125_1994857018896",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "global",
+                "label": "Cin"
+              }
+            },
+            {
+              "id": "c_Cin_156125_1994857014416",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder1",
+                "pin_type": "input",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_I1_156125_1994857018896",
+              "c_Cin_156125_1994857014416"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_B_2_315044_1994922137008",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "B",
+                "pin_index": 2
+              }
+            },
+            {
+              "id": "c_B_315044_1994922132112",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder3",
+                "pin_type": "input",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_B_2_315044_1994922137008",
+              "c_B_315044_1994922132112"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_A_0_298904_1994856215424",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "A",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_A_298905_1994856212400",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder1",
+                "pin_type": "input",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_A_0_298904_1994856215424",
+              "c_A_298905_1994856212400"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_B_3_317227_1994922137296",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "B",
+                "pin_index": 3
+              }
+            },
+            {
+              "id": "c_B_317227_1994922133552",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder4",
+                "pin_type": "input",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_B_3_317227_1994922137296",
+              "c_B_317227_1994922133552"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Cout_37403_1994922132688",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder3",
+                "pin_type": "output",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_Cin_37403_1994922133840",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder4",
+                "pin_type": "input",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Cout_37403_1994922132688",
+              "c_Cin_37403_1994922133840"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_327093_1994922132976",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder3",
+                "pin_type": "output",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_Q_2_327093_1994922140752",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Q",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_327093_1994922132976",
+              "c_Q_2_327093_1994922140752"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_A_3_307570_1994856868624",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "A",
+                "pin_index": 3
+              }
+            },
+            {
+              "id": "c_A_307570_1994922133264",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder4",
+                "pin_type": "input",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_A_3_307570_1994856868624",
+              "c_A_307570_1994922133264"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Cout_33510_1994856868320",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder1",
+                "pin_type": "output",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_Cin_33510_1994856968944",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder2",
+                "pin_type": "input",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Cout_33510_1994856868320",
+              "c_Cin_33510_1994856968944"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_325223_1994856971536",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder2",
+                "pin_type": "output",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_Q_1_325223_1994922140464",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Q",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_325223_1994856971536",
+              "c_Q_1_325223_1994922140464"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_322508_1994856868928",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder1",
+                "pin_type": "output",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_Q_0_322508_1994922140176",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Q",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_322508_1994856868928",
+              "c_Q_0_322508_1994922140176"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Cout_158460_1994922134128",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder4",
+                "pin_type": "output",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_O1_158460_1994857019216",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "global",
+                "label": "Cout"
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Cout_158460_1994922134128",
+              "c_O1_158460_1994857019216"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_329224_1994922134416",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder4",
+                "pin_type": "output",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_Q_3_329224_1994922141040",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Q",
+                "pin_index": 3
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_329224_1994922134416",
+              "c_Q_3_329224_1994922141040"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_B_1_312059_1994922136720",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "B",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_B_312059_1994856966640",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder2",
+                "pin_type": "input",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_B_1_312059_1994922136720",
+              "c_B_312059_1994856966640"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_B_0_310251_1994856869536",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "B",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_B_310251_1994857009616",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder1",
+                "pin_type": "input",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_B_0_310251_1994856869536",
+              "c_B_310251_1994857009616"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_A_1_302667_1994857017296",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "A",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_A_302667_1994856970960",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder2",
+                "pin_type": "input",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_A_1_302667_1994857017296",
+              "c_A_302667_1994856970960"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_A_2_304845_1994857017616",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "A",
+                "pin_index": 2
+              }
+            },
+            {
+              "id": "c_A_304845_1994922131824",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "1bit-FullAdder3",
+                "pin_type": "input",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_A_2_304845_1994857017616",
+              "c_A_304845_1994922131824"
+            ]
+          ]
+        }
+      ]
+    }
   }
 ]

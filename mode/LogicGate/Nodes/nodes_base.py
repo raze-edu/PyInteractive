@@ -1,8 +1,15 @@
 import math
 import json
+import re
 from typing import Any, List, Tuple, Optional, Union
 import pygame
 from .style import shared_style
+
+def normalize_label(lbl: str) -> str:
+    """Normalizes array node labels by converting 'A_I0' to 'A_0' and 'Q_O3' to 'Q_3'."""
+    if not lbl:
+        return ""
+    return re.sub(r'_(I|O)(\d+)', r'_\2', lbl)
 
 class NodeRegistry:
     """Manages unique identifiers and number allocation for interactive nodes."""
@@ -53,6 +60,7 @@ class InteractiveNode:
         self.shape = shape
         self.label_prefix = label_prefix
         self.custom_name = None
+        self._custom_label = None
         
         if shape == "circle":
             self.x, self.y = pos  # representing relative center coords
@@ -93,9 +101,15 @@ class InteractiveNode:
     @property
     def label(self) -> str:
         """Returns the identifying label (e.g. prefix + unique number)."""
+        if getattr(self, "_custom_label", None) is not None:
+            return self._custom_label
         if getattr(self, "custom_name", None) is not None:
             return self.custom_name
         return f"{self.label_prefix}{self.number}"
+
+    @label.setter
+    def label(self, val: str) -> None:
+        self._custom_label = val
 
     @property
     def center(self) -> Tuple[float, float]:
@@ -380,7 +394,6 @@ class ComponentSubNode(InteractiveNode):
         self.rel_x = rel_x
         self.rel_y = rel_y
         self.is_transmitter = is_transmitter
-        self._custom_label = custom_label
         self.color = color
         
         super().__init__(
@@ -390,6 +403,7 @@ class ComponentSubNode(InteractiveNode):
             label_prefix=custom_label,
             state=False
         )
+        self._custom_label = custom_label
         self._evaluating = False
         self._last_state = False
 
@@ -606,15 +620,17 @@ class LogicComponent(InteractiveNode):
             self.output_mapping = {}
 
             # Map external pins to internal nodes by matching name/label
-            internal_inputs = [obj for obj in self.internal_objects if isinstance(obj, GlobalInputNode)]
+            internal_inputs = [obj for obj in self.internal_objects if isinstance(obj, GlobalInputNode) or (isinstance(obj, ArrayNode) and obj.is_transmitter)]
             for ext_in in self.inputs:
-                match = next((i for i in internal_inputs if i.label == ext_in.label), None)
+                ext_norm = normalize_label(ext_in.label)
+                match = next((i for i in internal_inputs if normalize_label(i.label) == ext_norm), None)
                 if match:
                     self.input_mapping[ext_in] = match
 
-            internal_outputs = [obj for obj in self.internal_objects if isinstance(obj, GlobalOutputNode)]
+            internal_outputs = [obj for obj in self.internal_objects if isinstance(obj, GlobalOutputNode) or (isinstance(obj, ArrayNode) and not obj.is_transmitter)]
             for ext_out in self.outputs:
-                match = next((o for o in internal_outputs if o.label == ext_out.label), None)
+                ext_norm = normalize_label(ext_out.label)
+                match = next((o for o in internal_outputs if normalize_label(o.label) == ext_norm), None)
                 if match:
                     self.output_mapping[ext_out] = match
 
@@ -1279,7 +1295,8 @@ def serialize_canvas(app: Any) -> dict:
                 "alignment": obj.alignment,
                 "x": obj.x,
                 "y": obj.y,
-                "value": obj.value
+                "value": obj.value,
+                "custom_names": [node.custom_name for node in obj.nodes]
             })
 
     connections_serialized = []
@@ -1350,6 +1367,7 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
         if ntype == "input":
             inp = GlobalInputNode(pos=(x, y))
             inp.custom_name = custom_name
+            inp.label = label
             label_map[label] = inp
             objects.append(inp)
         elif ntype == "output":
@@ -1361,6 +1379,7 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
                 center_pos = (x, y)
             out = GlobalOutputNode(pos=center_pos)
             out.custom_name = custom_name
+            out.label = label
             label_map[label] = out
             objects.append(out)
         elif ntype == "array":
@@ -1368,9 +1387,14 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
             array_size = node_def["array_size"]
             alignment = node_def["alignment"]
             val = node_def.get("value", 0)
+            custom_names = node_def.get("custom_names", [])
             
             arr = NodeArray(array_type, array_size, alignment, pos=(x, y), label_prefix=label)
+            arr.label = label
             arr.value = val
+            for i, name in enumerate(custom_names):
+                if i < len(arr.nodes):
+                    arr.nodes[i].custom_name = name
             label_map[label] = arr
             objects.append(arr)
             for sub in arr.nodes:
@@ -1385,6 +1409,7 @@ def deserialize_inner_circuit(inner_circuit_def: dict) -> Tuple[List[Any], List[
             
             center_pos = (x + width / 2.0, y + height / 2.0)
             gate = LogicComponent.from_json(gate_name, pos=center_pos)
+            gate.label = label
             gate.width = width
             gate.height = height
             if color:
