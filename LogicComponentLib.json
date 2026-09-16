@@ -133300,5 +133300,1379 @@
         }
       ]
     }
+  },
+  {
+    "name": "8bit-FullAdder2",
+    "width": 200,
+    "height": 200,
+    "color": [
+      142,
+      68,
+      173,
+      255
+    ],
+    "inputs": [
+      {
+        "name": "Ain_I0",
+        "rel_x": 22,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Ain_I1",
+        "rel_x": 45,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Ain_I2",
+        "rel_x": 67,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Ain_I3",
+        "rel_x": 90,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Ain_I4",
+        "rel_x": 114,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Ain_I5",
+        "rel_x": 133,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Ain_I6",
+        "rel_x": 156,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Ain_I7",
+        "rel_x": 178,
+        "rel_y": 0,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I0",
+        "rel_x": 24,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I1",
+        "rel_x": 43,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I2",
+        "rel_x": 63,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I3",
+        "rel_x": 84,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I4",
+        "rel_x": 107,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I5",
+        "rel_x": 131,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I6",
+        "rel_x": 155,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Bin_I7",
+        "rel_x": 175,
+        "rel_y": 200,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "Cin",
+        "rel_x": 0,
+        "rel_y": 69,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Cout",
+        "rel_x": 0,
+        "rel_y": 127,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O0",
+        "rel_x": 200,
+        "rel_y": 18,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O1",
+        "rel_x": 200,
+        "rel_y": 39,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O2",
+        "rel_x": 200,
+        "rel_y": 60,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O3",
+        "rel_x": 200,
+        "rel_y": 82,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O4",
+        "rel_x": 200,
+        "rel_y": 107,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O5",
+        "rel_x": 200,
+        "rel_y": 127,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O6",
+        "rel_x": 200,
+        "rel_y": 155,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "Qout_O7",
+        "rel_x": 200,
+        "rel_y": 179,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      }
+    ],
+    "type": "composite",
+    "inner_circuit": {
+      "nodes": [
+        {
+          "type": "gate",
+          "label": "4bit_FullAdder1",
+          "gate_name": "4bit_FullAdder",
+          "x": 0.3924479166666667,
+          "y": 0.5314814814814814,
+          "width": 0.06197916666666667,
+          "height": 0.1574074074074074,
+          "color": [
+            142,
+            68,
+            173,
+            255
+          ]
+        },
+        {
+          "type": "gate",
+          "label": "4bit_FullAdder2",
+          "gate_name": "4bit_FullAdder",
+          "x": 0.3893229166666666,
+          "y": 0.3194444444444444,
+          "width": 0.06197916666666667,
+          "height": 0.1574074074074074,
+          "color": [
+            142,
+            68,
+            173,
+            255
+          ]
+        },
+        {
+          "type": "array",
+          "label": "Ain",
+          "array_type": "input",
+          "array_size": 8,
+          "alignment": "V",
+          "x": 0.22864583333333346,
+          "y": 0.1601851851851851,
+          "value": 5,
+          "custom_names": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "type": "array",
+          "label": "Bin",
+          "array_type": "input",
+          "array_size": 8,
+          "alignment": "V",
+          "x": 0.22968750000000004,
+          "y": 0.5175925925925926,
+          "value": 100,
+          "custom_names": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "type": "array",
+          "label": "Qout",
+          "array_type": "output",
+          "array_size": 8,
+          "alignment": "V",
+          "x": 0.5697916666666666,
+          "y": 0.3370370370370368,
+          "value": 105,
+          "custom_names": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "type": "input",
+          "label": "Cin",
+          "custom_name": "Cin",
+          "x": 0.4203125,
+          "y": 0.1925925925925923
+        },
+        {
+          "type": "output",
+          "label": "Cout",
+          "custom_name": "Cout",
+          "x": 0.42447916666666663,
+          "y": 0.8305555555555552
+        }
+      ],
+      "connections": [
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Cout_284310_1747942189504",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "output",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_Cin_284310_1747877095328",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 8
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Cout_284310_1747942189504",
+              "c_Cin_284310_1747877095328"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_0_319336_1747942189776",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "output",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_B11_O0_319336_1747950448672",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_0_319336_1747942189776",
+              "c_B11_O0_319336_1747950448672"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_1_321050_1747942190048",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "output",
+                "pin_index": 2
+              }
+            },
+            {
+              "id": "c_B11_O1_321050_1747950448400",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_1_321050_1747942190048",
+              "c_B11_O1_321050_1747950448400"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_2_323086_1747942190320",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "output",
+                "pin_index": 3
+              }
+            },
+            {
+              "id": "c_B11_O2_323086_1747950448944",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_2_323086_1747942190320",
+              "c_B11_O2_323086_1747950448944"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_3_324721_1747942190592",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "output",
+                "pin_index": 4
+              }
+            },
+            {
+              "id": "c_B11_O3_324721_1747950449216",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 3
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_3_324721_1747942190592",
+              "c_B11_O3_324721_1747950449216"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_0_326569_1747877094784",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "output",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_B11_O4_326569_1747950449488",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 4
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_0_326569_1747877094784",
+              "c_B11_O4_326569_1747950449488"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I0_147033_1747950441056",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_A_0_147033_1747942187056",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I0_147033_1747950441056",
+              "c_A_0_147033_1747942187056"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_1_349515_1747877100496",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "output",
+                "pin_index": 2
+              }
+            },
+            {
+              "id": "c_B11_O5_349515_1747950449760",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 5
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_1_349515_1747877100496",
+              "c_B11_O5_349515_1747950449760"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I1_148979_1747950441328",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_A_1_148979_1747942187328",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I1_148979_1747950441328",
+              "c_A_1_148979_1747942187328"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_2_330337_1747877100768",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "output",
+                "pin_index": 3
+              }
+            },
+            {
+              "id": "c_B11_O6_330337_1747950450032",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 6
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_2_330337_1747877100768",
+              "c_B11_O6_330337_1747950450032"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I2_150694_1747950441600",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 2
+              }
+            },
+            {
+              "id": "c_A_2_150694_1747942187600",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I2_150694_1747950441600",
+              "c_A_2_150694_1747942187600"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Q_3_332016_1747877101040",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "output",
+                "pin_index": 4
+              }
+            },
+            {
+              "id": "c_B11_O7_332016_1747950450304",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Qout",
+                "pin_index": 7
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Q_3_332016_1747877101040",
+              "c_B11_O7_332016_1747950450304"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I3_152558_1747950441872",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 3
+              }
+            },
+            {
+              "id": "c_A_3_152558_1747942187872",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 3
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I3_152558_1747950441872",
+              "c_A_3_152558_1747942187872"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_I3_457869_1747876918720",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "global",
+                "label": "Cin"
+              }
+            },
+            {
+              "id": "c_Cin_457869_1747942189232",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 8
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_I3_457869_1747876918720",
+              "c_Cin_457869_1747942189232"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I3_243961_1747950444320",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 3
+              }
+            },
+            {
+              "id": "c_B_3_243961_1747942188960",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 7
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I3_243961_1747950444320",
+              "c_B_3_243961_1747942188960"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Cout_473532_1747877100224",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "output",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_O3_473532_1747876919024",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "global",
+                "label": "Cout"
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Cout_473532_1747877100224",
+              "c_O3_473532_1747876919024"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I2_241918_1747950444048",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 2
+              }
+            },
+            {
+              "id": "c_B_2_241918_1747942188688",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 6
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I2_241918_1747950444048",
+              "c_B_2_241918_1747942188688"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I1_239732_1747950443776",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 1
+              }
+            },
+            {
+              "id": "c_B_1_239732_1747942188416",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 5
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I1_239732_1747950443776",
+              "c_B_1_239732_1747942188416"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I0_237715_1747950443504",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 0
+              }
+            },
+            {
+              "id": "c_B_0_237715_1747942188144",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder2",
+                "pin_type": "input",
+                "pin_index": 4
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I0_237715_1747950443504",
+              "c_B_0_237715_1747942188144"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I4_246947_1747950444592",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 4
+              }
+            },
+            {
+              "id": "c_B_0_246947_1747876916288",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 4
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I4_246947_1747950444592",
+              "c_B_0_246947_1747876916288"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I5_249011_1747950444864",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 5
+              }
+            },
+            {
+              "id": "c_B_1_249011_1747877013712",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 5
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I5_249011_1747950444864",
+              "c_B_1_249011_1747877013712"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I6_250835_1747950445136",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 6
+              }
+            },
+            {
+              "id": "c_B_2_250835_1747877092608",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 6
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I6_250835_1747950445136",
+              "c_B_2_250835_1747877092608"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Bin_I7_252540_1747950445408",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Bin",
+                "pin_index": 7
+              }
+            },
+            {
+              "id": "c_B_3_252540_1747877093968",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 7
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Bin_I7_252540_1747950445408",
+              "c_B_3_252540_1747877093968"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I4_257301_1747950442144",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 4
+              }
+            },
+            {
+              "id": "c_A_0_257301_1747876390832",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 0
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I4_257301_1747950442144",
+              "c_A_0_257301_1747876390832"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I5_259577_1747950442416",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 5
+              }
+            },
+            {
+              "id": "c_A_1_259577_1747877056976",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 1
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I5_259577_1747950442416",
+              "c_A_1_259577_1747877056976"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I6_266513_1747950442688",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 6
+              }
+            },
+            {
+              "id": "c_A_2_266513_1747877061776",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 2
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I6_266513_1747950442688",
+              "c_A_2_266513_1747877061776"
+            ]
+          ]
+        },
+        {
+          "connector_nodes": [
+            {
+              "id": "c_Ain_I7_268745_1747950442960",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "array_pin",
+                "array_label": "Ain",
+                "pin_index": 7
+              }
+            },
+            {
+              "id": "c_A_3_268745_1747876915680",
+              "x": 0.0,
+              "y": 0.0,
+              "linked_to": {
+                "type": "gate_pin",
+                "gate_label": "4bit_FullAdder1",
+                "pin_type": "input",
+                "pin_index": 3
+              }
+            }
+          ],
+          "lines": [
+            [
+              "c_Ain_I7_268745_1747950442960",
+              "c_A_3_268745_1747876915680"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Latch_",
+    "width": 81,
+    "height": 61,
+    "color": [
+      142,
+      68,
+      173,
+      255
+    ],
+    "inputs": [
+      {
+        "name": "I0",
+        "rel_x": 0,
+        "rel_y": 13,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      },
+      {
+        "name": "I1",
+        "rel_x": 0,
+        "rel_y": 48,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "O0",
+        "rel_x": 81,
+        "rel_y": 12,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      },
+      {
+        "name": "O1",
+        "rel_x": 81,
+        "rel_y": 51,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      }
+    ],
+    "logic_table": {
+      "00": "01",
+      "01": "01",
+      "10": "01",
+      "11": "01"
+    }
+  },
+  {
+    "name": "TEST_COMPOSITE",
+    "width": 110,
+    "height": 90,
+    "color": [
+      142,
+      68,
+      173,
+      255
+    ],
+    "inputs": [
+      {
+        "name": "IN1",
+        "rel_x": 0,
+        "rel_y": 45,
+        "color": [
+          231,
+          76,
+          60,
+          255
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "OUT1",
+        "rel_x": 110,
+        "rel_y": 45,
+        "color": [
+          46,
+          204,
+          113,
+          255
+        ]
+      }
+    ],
+    "type": "composite",
+    "inner_circuit": {
+      "canvas_size": [
+        1000,
+        800
+      ],
+      "nodes": [
+        {
+          "id": "in_IN1",
+          "type": "input",
+          "label": "IN1",
+          "x": 0.1,
+          "y": 0.5
+        },
+        {
+          "id": "out_OUT1",
+          "type": "output",
+          "label": "OUT1",
+          "x": 0.9,
+          "y": 0.5
+        }
+      ],
+      "connections": []
+    }
   }
 ]

@@ -30,26 +30,82 @@ def init_builder_mode(app: Any):
     app.builder_dragging_slider = None
     app.builder_compile_mode = "table"
 
-    # Distribute inputs along left edge, outputs along right edge
-    app.builder_in_positions = []
-    num_inputs = len(app.builder_inputs)
-    for i, inp in enumerate(app.builder_inputs):
-        spacing = app.builder_height / (num_inputs + 1)
-        app.builder_in_positions.append({
-            "name": inp.label,
-            "rel_x": 0.0,
-            "rel_y": (i + 1) * spacing
-        })
+    # Helper function to group nodes
+    def group_builder_nodes(nodes):
+        groups = []
+        visited = set()
+        for node in nodes:
+            if node in visited:
+                continue
+            if isinstance(node, ArrayNode):
+                parent = node.parent
+                group_members = [n for n in nodes if isinstance(n, ArrayNode) and n.parent == parent]
+                group_members.sort(key=lambda n: parent.nodes.index(n))
+                groups.append({
+                    "parent": parent,
+                    "members": group_members
+                })
+                for m in group_members:
+                    visited.add(m)
+            else:
+                groups.append({
+                    "parent": None,
+                    "members": [node]
+                })
+                visited.add(node)
+        return groups
 
+    input_groups = group_builder_nodes(app.builder_inputs)
+    output_groups = group_builder_nodes(app.builder_outputs)
+
+    for g in input_groups + output_groups:
+        pa = g["parent"]
+        if pa is not None:
+            if not hasattr(pa, "_last_v_dir"):
+                pa._last_v_dir = "up"
+            if not hasattr(pa, "_last_h_dir"):
+                pa._last_h_dir = "left"
+
+    # Calculate required height dynamically to fit all groups
+    req_in_h = sum(len(g["members"]) * 20.0 for g in input_groups) + (len(input_groups) + 1) * 20.0
+    req_out_h = sum(len(g["members"]) * 20.0 for g in output_groups) + (len(output_groups) + 1) * 20.0
+    max_req_h = max(req_in_h, req_out_h)
+    if max_req_h > app.builder_height:
+        app.builder_height = int(max_req_h)
+
+    # Position inputs (left edge)
+    app.builder_in_positions = []
+    h_in_g = sum(len(g["members"]) * 20.0 for g in input_groups)
+    space_in = (app.builder_height - h_in_g) / (len(input_groups) + 1)
+    
+    current_y = space_in
+    for g in input_groups:
+        for j, m in enumerate(g["members"]):
+            app.builder_in_positions.append({
+                "name": m.label,
+                "rel_x": 0.0,
+                "rel_y": current_y + (j + 0.5) * 20.0,
+                "parent_array": g["parent"],
+                "array_index": g["parent"].nodes.index(m) if g["parent"] else 0
+            })
+        current_y += len(g["members"]) * 20.0 + space_in
+
+    # Position outputs (right edge)
     app.builder_out_positions = []
-    num_outputs = len(app.builder_outputs)
-    for i, out in enumerate(app.builder_outputs):
-        spacing = app.builder_height / (num_outputs + 1)
-        app.builder_out_positions.append({
-            "name": out.label,
-            "rel_x": float(app.builder_width),
-            "rel_y": (i + 1) * spacing
-        })
+    h_out_g = sum(len(g["members"]) * 20.0 for g in output_groups)
+    space_out = (app.builder_height - h_out_g) / (len(output_groups) + 1)
+    
+    current_y = space_out
+    for g in output_groups:
+        for j, m in enumerate(g["members"]):
+            app.builder_out_positions.append({
+                "name": m.label,
+                "rel_x": float(app.builder_width),
+                "rel_y": current_y + (j + 0.5) * 20.0,
+                "parent_array": g["parent"],
+                "array_index": g["parent"].nodes.index(m) if g["parent"] else 0
+            })
+        current_y += len(g["members"]) * 20.0 + space_out
 
 def draw_slider(screen: pygame.Surface, x: int, y: int, w: int, val: float, min_val: float, max_val: float, label: str, font: pygame.font.Font, color: Tuple[int, int, int]) -> pygame.Rect:
     """Helper to draw a slider and return the collision bounding rect for interaction."""
@@ -426,19 +482,91 @@ def handle_builder_event(app: Any, event: pygame.event.Event) -> bool:
             # Map mouse X coordinates between slider range (50 to 270)
             ratio = max(0.0, min(1.0, (event.pos[0] - 50.0) / 220.0))
             if app.builder_dragging_slider == "width":
+                old_w = app.builder_width
                 # Width slider Y=185
                 app.builder_width = int(60.0 + ratio * (200.0 - 60.0))
-                # Adjust rel_x positions on the right edge dynamically
-                for p_out in app.builder_out_positions:
-                    if p_out["rel_x"] > 0.0:
-                        p_out["rel_x"] = float(app.builder_width)
+                new_w = app.builder_width
+                
+                # Adjust rel_x positions dynamically
+                for positions in [app.builder_in_positions, app.builder_out_positions]:
+                    groups = {}
+                    for pos in positions:
+                        pa = pos.get("parent_array")
+                        if pa is not None:
+                            groups.setdefault(pa, []).append(pos)
+                    
+                    # 1. Update standalone pins
+                    for pos in positions:
+                        if pos.get("parent_array") is None:
+                            if abs(pos["rel_x"] - old_w) < 1.0:
+                                pos["rel_x"] = float(new_w)
+                            else:
+                                pos["rel_x"] = max(0.0, min(float(new_w), pos["rel_x"]))
+                                
+                    # 2. Update group pins
+                    for pa, group_pos in groups.items():
+                        group_pos.sort(key=lambda p: p["array_index"])
+                        is_vertical = abs(group_pos[0]["rel_x"] - group_pos[-1]["rel_x"]) < 1.0
+                        if is_vertical:
+                            if abs(group_pos[0]["rel_x"] - old_w) < 1.0:
+                                for pos in group_pos:
+                                    pos["rel_x"] = float(new_w)
+                            else:
+                                for pos in group_pos:
+                                    pos["rel_x"] = max(0.0, min(float(new_w), pos["rel_x"]))
+                        else:
+                            # Horizontal group: keep them touching, clamp start X
+                            N = len(group_pos)
+                            current_start_x = group_pos[0]["rel_x"]
+                            max_x = current_start_x + (N - 1) * 20.0
+                            if max_x > new_w:
+                                current_start_x = max(0.0, new_w - (N - 1) * 20.0)
+                            for i, pos in enumerate(group_pos):
+                                pos["rel_x"] = current_start_x + i * 20.0
+            
             elif app.builder_dragging_slider == "height":
+                old_h = app.builder_height
                 # Height slider Y=245
                 app.builder_height = int(60.0 + ratio * (200.0 - 60.0))
-                # clamp node relative positions inside new height
-                for p in app.builder_in_positions + app.builder_out_positions:
-                    if p["rel_y"] > app.builder_height:
-                        p["rel_y"] = float(app.builder_height)
+                new_h = app.builder_height
+                
+                # Adjust rel_y positions dynamically
+                for positions in [app.builder_in_positions, app.builder_out_positions]:
+                    groups = {}
+                    for pos in positions:
+                        pa = pos.get("parent_array")
+                        if pa is not None:
+                            groups.setdefault(pa, []).append(pos)
+                    
+                    # 1. Update standalone pins
+                    for pos in positions:
+                        if pos.get("parent_array") is None:
+                            if abs(pos["rel_y"] - old_h) < 1.0:
+                                pos["rel_y"] = float(new_h)
+                            else:
+                                pos["rel_y"] = max(0.0, min(float(new_h), pos["rel_y"]))
+                                
+                    # 2. Update group pins
+                    for pa, group_pos in groups.items():
+                        group_pos.sort(key=lambda p: p["array_index"])
+                        is_vertical = abs(group_pos[0]["rel_x"] - group_pos[-1]["rel_x"]) < 1.0
+                        if is_vertical:
+                            # Vertical group: keep touching, clamp start Y
+                            N = len(group_pos)
+                            current_start_y = group_pos[0]["rel_y"]
+                            max_y = current_start_y + (N - 1) * 20.0
+                            if max_y > new_h:
+                                current_start_y = max(0.0, new_h - (N - 1) * 20.0)
+                            for i, pos in enumerate(group_pos):
+                                pos["rel_y"] = current_start_y + i * 20.0
+                        else:
+                            if abs(group_pos[0]["rel_y"] - old_h) < 1.0:
+                                for pos in group_pos:
+                                    pos["rel_y"] = float(new_h)
+                            else:
+                                for pos in group_pos:
+                                    pos["rel_y"] = max(0.0, min(float(new_h), pos["rel_y"]))
+            
             elif app.builder_dragging_slider == "R":
                 app.builder_color[0] = int(ratio * 255.0)
             elif app.builder_dragging_slider == "G":
@@ -453,12 +581,66 @@ def handle_builder_event(app: Any, event: pygame.event.Event) -> bool:
             snapped_x, snapped_y = snap_to_outline(rel_x, rel_y, pw, ph)
             
             node_type, idx = app.builder_dragging_node
-            if node_type == "in":
-                app.builder_in_positions[idx]["rel_x"] = snapped_x
-                app.builder_in_positions[idx]["rel_y"] = snapped_y
+            positions = app.builder_in_positions if node_type == "in" else app.builder_out_positions
+            p = positions[idx]
+            
+            parent_array = p.get("parent_array")
+            if parent_array is not None:
+                # Find all positions in the same NodeArray
+                group_positions = [pos for pos in positions if pos.get("parent_array") == parent_array]
+                group_positions.sort(key=lambda pos: pos["array_index"])
+                drag_group_idx = group_positions.index(p)
+                N = len(group_positions)
+                
+                # Determine which edge we snapped to
+                is_vertical = False
+                if snapped_x == 0.0 or snapped_x == pw:
+                    is_vertical = True
+                
+                old_x = p["rel_x"]
+                old_y = p["rel_y"]
+                
+                if is_vertical:
+                    # Update vertical direction if moved
+                    dy = snapped_y - old_y
+                    if dy > 0:
+                        parent_array._last_v_dir = "down"
+                    elif dy < 0:
+                        parent_array._last_v_dir = "up"
+                        
+                    order_multiplier = 1.0 if parent_array._last_v_dir == "up" else -1.0
+                    
+                    # Clamp y bounds based on multiplier
+                    if order_multiplier == 1.0:
+                        clamped_y = max(drag_group_idx * 20.0, min(ph - (N - 1 - drag_group_idx) * 20.0, snapped_y))
+                    else:
+                        clamped_y = max((N - 1 - drag_group_idx) * 20.0, min(ph - drag_group_idx * 20.0, snapped_y))
+                        
+                    for i, pos in enumerate(group_positions):
+                        pos["rel_x"] = snapped_x
+                        pos["rel_y"] = clamped_y + (i - drag_group_idx) * 20.0 * order_multiplier
+                else:
+                    # Update horizontal direction if moved
+                    dx = snapped_x - old_x
+                    if dx > 0:
+                        parent_array._last_h_dir = "right"
+                    elif dx < 0:
+                        parent_array._last_h_dir = "left"
+                        
+                    order_multiplier = 1.0 if parent_array._last_h_dir == "left" else -1.0
+                    
+                    # Clamp x bounds based on multiplier
+                    if order_multiplier == 1.0:
+                        clamped_x = max(drag_group_idx * 20.0, min(pw - (N - 1 - drag_group_idx) * 20.0, snapped_x))
+                    else:
+                        clamped_x = max((N - 1 - drag_group_idx) * 20.0, min(pw - drag_group_idx * 20.0, snapped_x))
+                        
+                    for i, pos in enumerate(group_positions):
+                        pos["rel_x"] = clamped_x + (i - drag_group_idx) * 20.0 * order_multiplier
+                        pos["rel_y"] = snapped_y
             else:
-                app.builder_out_positions[idx]["rel_x"] = snapped_x
-                app.builder_out_positions[idx]["rel_y"] = snapped_y
+                p["rel_x"] = snapped_x
+                p["rel_y"] = snapped_y
 
     elif event.type == pygame.MOUSEBUTTONUP:
         if event.button == 1:
