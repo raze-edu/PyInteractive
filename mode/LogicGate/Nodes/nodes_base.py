@@ -1078,11 +1078,11 @@ class NodeArray(InteractiveNode):
             label_prefix = "A" if self.array_type == "input" else "B"
 
         if self.alignment == "V":
-            w = 80.0
-            h = 40.0 * (size + 1)
+            w = 12.0
+            h = 19.2 * size
         else:
-            w = 40.0 * (size + 1)
-            h = 80.0
+            w = 19.2 * size
+            h = 12.0
 
         w_rel = w / 1920.0
         h_rel = h / 1080.0
@@ -1098,13 +1098,11 @@ class NodeArray(InteractiveNode):
         self.nodes = []
         for i in range(size):
             if self.alignment == "V":
-                rel_x = w_rel if self.array_type == "input" else 0.0
-                spacing = h_rel / (size + 1)
-                rel_y = (i + 1) * spacing
+                rel_x = w_rel / 2.0
+                rel_y = ((i + 0.5) * 19.2) / 1080.0
             else:
-                spacing = w_rel / (size + 1)
-                rel_x = (i + 1) * spacing
-                rel_y = h_rel if self.array_type == "input" else 0.0
+                rel_x = ((i + 0.5) * 19.2) / 1920.0
+                rel_y = h_rel / 2.0
 
             sub = ArrayNode(
                 parent=self,
@@ -1132,6 +1130,30 @@ class NodeArray(InteractiveNode):
             max_val = (1 << self.array_size) - 1
             self._input_value = max(0, min(max_val, val))
 
+    def collidepoint(self, pos: Tuple[float, float], canvas_size: Tuple[float, float]) -> bool:
+        """Checks if canvas coordinate point lies within the array bounding box (including sticking-out nodes)."""
+        mx, my = pos
+        canvas_w, canvas_h = canvas_size
+        
+        abs_x = self.x * canvas_w
+        abs_y = self.y * canvas_h
+        abs_w = self.width * canvas_w
+        abs_h = self.height * canvas_h
+        abs_r = 0.005 * canvas_w  # ArrayNode radius is 0.005
+        
+        if self.alignment == "V":
+            x_min = abs_x + abs_w / 2.0 - abs_r
+            y_min = abs_y
+            box_w = abs_r * 2.0
+            box_h = abs_h
+        else:
+            x_min = abs_x
+            y_min = abs_y + abs_h / 2.0 - abs_r
+            box_w = abs_w
+            box_h = abs_r * 2.0
+            
+        return x_min <= mx <= x_min + box_w and y_min <= my <= y_min + box_h
+
     def handle_event(self, event: pygame.event.Event, canvas_size: Tuple[float, float]) -> None:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = getattr(event, "pos", None)
@@ -1152,6 +1174,7 @@ class NodeArray(InteractiveNode):
         abs_y = (self.y * canvas_h) * zoom + oy
         abs_w = self.width * canvas_w * zoom
         abs_h = self.height * canvas_h * zoom
+        abs_r = 0.005 * canvas_w * zoom
 
         group_color = app.get_component_group_color(self.label)
         if group_color is None:
@@ -1164,12 +1187,25 @@ class NodeArray(InteractiveNode):
 
         rect_obj = pygame.Rect(int(abs_x), int(abs_y), int(abs_w), int(abs_h))
 
+        # Selection outline (yellow border) centered around bounding box enclosing nodes
+        if self.alignment == "V":
+            x_min = abs_x + abs_w / 2.0 - abs_r
+            y_min = abs_y
+            box_w = abs_r * 2.0
+            box_h = abs_h
+        else:
+            x_min = abs_x
+            y_min = abs_y + abs_h / 2.0 - abs_r
+            box_w = abs_w
+            box_h = abs_r * 2.0
+
         if getattr(self, "selected", False):
             sel_color = shared_style.get_color("node_selected_border", (255, 220, 0, 255))
+            rect_sel = pygame.Rect(int(x_min) - 4, int(y_min) - 4, int(box_w) + 8, int(box_h) + 8)
             try:
-                pygame.draw.rect(screen, sel_color[:3], pygame.Rect(int(abs_x) - 4, int(abs_y) - 4, int(abs_w) + 8, int(abs_h) + 8), 3, border_radius=8)
+                pygame.draw.rect(screen, sel_color[:3], rect_sel, 3, border_radius=8)
             except TypeError:
-                pygame.draw.rect(screen, sel_color[:3], pygame.Rect(int(abs_x) - 4, int(abs_y) - 4, int(abs_w) + 8, int(abs_h) + 8), 3)
+                pygame.draw.rect(screen, sel_color[:3], rect_sel, 3)
 
         try:
             pygame.draw.rect(screen, bg_fill[:3], rect_obj, border_radius=6)
@@ -1194,20 +1230,21 @@ class NodeArray(InteractiveNode):
         name_text = font.render(self.label, True, (255, 255, 255))
         val_text = font.render(val_str + cursor, True, (255, 255, 0) if is_editing else (255, 255, 255))
 
+        # Position name label and value text outside the thin container
         if self.alignment == "V":
             tx = abs_x + abs_w / 2.0 - name_text.get_width() / 2.0
-            ty = abs_y + abs_h * 0.25 - name_text.get_height() / 2.0
+            ty = abs_y - name_text.get_height() - 5
             screen.blit(name_text, (int(tx), int(ty)))
 
             vx = abs_x + abs_w / 2.0 - val_text.get_width() / 2.0
-            vy = abs_y + abs_h * 0.75 - val_text.get_height() / 2.0
+            vy = abs_y + abs_h + 5
             screen.blit(val_text, (int(vx), int(vy)))
         else:
-            tx = abs_x + abs_w * 0.25 - name_text.get_width() / 2.0
+            tx = abs_x - name_text.get_width() - 5
             ty = abs_y + abs_h / 2.0 - name_text.get_height() / 2.0
             screen.blit(name_text, (int(tx), int(ty)))
 
-            vx = abs_x + abs_w * 0.75 - val_text.get_width() / 2.0
+            vx = abs_x + abs_w + 5
             vy = abs_y + abs_h / 2.0 - val_text.get_height() / 2.0
             screen.blit(val_text, (int(vx), int(vy)))
 
