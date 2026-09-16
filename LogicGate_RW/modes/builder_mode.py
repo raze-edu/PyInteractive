@@ -35,7 +35,10 @@ def init_builder_mode(app: Any) -> None:
     app.builder_dragging_node = None
     app.builder_dragging_slider = None
     app.builder_compile_mode = "table"
+<<<<<<< HEAD
     app.compile_mode_btn = pygame.Rect(50, 480, 220, 36)
+=======
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
 
     # Setup pin positions in preview
     app.builder_in_positions = []
@@ -60,6 +63,11 @@ def confirm_builder_compilation(app: Any) -> bool:
     if not app.builder_inputs or not app.builder_outputs:
         return False
 
+<<<<<<< HEAD
+=======
+    table_bits, table_dict = compile_canvas_to_table(app)
+
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
     template = {
         "name": app.builder_name.strip() or "NEW_GATE",
         "width": app.builder_width,
@@ -82,12 +90,18 @@ def confirm_builder_compilation(app: Any) -> bool:
                 "color": [46, 204, 113, 255]
             }
             for p in app.builder_out_positions
+<<<<<<< HEAD
         ]
+=======
+        ],
+        "logic_table": table_dict
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
     }
 
     if getattr(app, "builder_compile_mode", "table") == "composite":
         template["type"] = "composite"
         template["inner_circuit"] = serialize_canvas(app)
+<<<<<<< HEAD
     else:
         table_bits, table_dict = compile_canvas_to_table(app)
         template["logic_table"] = table_dict
@@ -102,6 +116,18 @@ def confirm_builder_compilation(app: Any) -> bool:
     save_component_template(template)
     if hasattr(app, "load_components"):
         app.load_components()
+=======
+
+    # Save to JSON
+    save_component_template(template)
+
+    # Also register in COMPONENT_LIB for high-speed Bits simulation
+    TableComponentLibraryEntry(
+        template["name"],
+        (len(template["inputs"]), len(template["outputs"])),
+        table_bits
+    )
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
 
     return True
 
@@ -129,7 +155,11 @@ def draw_builder(screen: pygame.Surface, app: Any) -> None:
         draw_button(screen, btn_cancel, "Return to Sim", mouse_pos)
         return
 
+<<<<<<< HEAD
     # 1. Left controls panel: Name textbox, Sliders, Mode toggle button
+=======
+    # 1. Left controls panel: Name textbox, Sliders
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
     # Name textbox
     tb_rect = pygame.Rect(50, 80, 220, 36)
     is_foc = (app.builder_focus == "name")
@@ -140,6 +170,10 @@ def draw_builder(screen: pygame.Surface, app: Any) -> None:
 
     # Sliders: Width, Height, Red, Green, Blue
     y_s = 150
+<<<<<<< HEAD
+=======
+    w_slider = pygame.Rect(50, y_s, 220, 20)
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
     draw_slider(screen, 50, y_s, 220, app.builder_width, 60, 260, "Width", lbl_font, (142, 68, 173))
     app.w_slider_rect = pygame.Rect(40, y_s - 10, 240, 25)
 
@@ -159,6 +193,7 @@ def draw_builder(screen: pygame.Surface, app: Any) -> None:
     draw_slider(screen, 50, y_s, 220, app.builder_color[2], 0, 255, "Color B", lbl_font, (80, 140, 240))
     app.b_slider_rect = pygame.Rect(40, y_s - 10, 240, 25)
 
+<<<<<<< HEAD
     # Mode toggle button (Truth Table vs Inner Circuit / Composite)
     y_s += 45
     app.compile_mode_btn = pygame.Rect(50, y_s, 220, 36)
@@ -170,6 +205,8 @@ def draw_builder(screen: pygame.Surface, app: Any) -> None:
     mode_surf = lbl_font.render(mode_text, True, (255, 255, 255))
     screen.blit(mode_surf, (app.compile_mode_btn.centerx - mode_surf.get_width() / 2, app.compile_mode_btn.centery - mode_surf.get_height() / 2))
 
+=======
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
     # 2. Center: Component preview box
     pw = app.builder_width
     ph = app.builder_height
@@ -223,7 +260,11 @@ def handle_builder_event(app: Any, event: pygame.event.Event) -> bool:
 
     mouse_pos = pygame.mouse.get_pos()
 
+<<<<<<< HEAD
     # Slider dragging and button clicks
+=======
+    # Slider dragging
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         # Check text box
         if pygame.Rect(50, 80, 220, 36).collidepoint(event.pos):
@@ -232,6 +273,7 @@ def handle_builder_event(app: Any, event: pygame.event.Event) -> bool:
         else:
             app.builder_focus = None
 
+<<<<<<< HEAD
         # Check mode button
         if hasattr(app, "compile_mode_btn") and app.compile_mode_btn.collidepoint(event.pos):
             if getattr(app, "builder_compile_mode", "table") == "table":
@@ -240,6 +282,8 @@ def handle_builder_event(app: Any, event: pygame.event.Event) -> bool:
                 app.builder_compile_mode = "table"
             return True
 
+=======
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
         # Check sliders
         if hasattr(app, "w_slider_rect") and app.w_slider_rect.collidepoint(event.pos):
             app.builder_dragging_slider = "width"

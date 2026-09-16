@@ -50,6 +50,7 @@ class UIArrayNode(UINode):
 
     @property
     def label(self) -> str:
+<<<<<<< HEAD
         if self.custom_name:
             return self.custom_name
         return f"{self.parent.label}_{self._custom_label}"
@@ -59,6 +60,9 @@ class UIArrayNode(UINode):
         if self.is_transmitter:
             self.switch_to()
             self.parent.sync_value_from_nodes()
+=======
+        return self._custom_label
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
 
     def draw(self, screen: pygame.Surface, app: Any) -> None:
         cw, ch = screen.get_size()
@@ -83,6 +87,7 @@ class UIArrayNode(UINode):
         pygame.draw.circle(screen, fill_color[:3], (int(cx), int(cy)), int(abs_r))
         pygame.draw.circle(screen, border_color[:3], (int(cx), int(cy)), int(abs_r), 1)
 
+<<<<<<< HEAD
         # Draw subnode label name
         font_size = shared_style.get_size("font_size_subnode", 12)
         try:
@@ -98,6 +103,8 @@ class UIArrayNode(UINode):
             offset_y = 10 if self.is_transmitter else -lbl_surf.get_height() - 10
             screen.blit(lbl_surf, (int(cx - lbl_surf.get_width() / 2), int(cy + offset_y)))
 
+=======
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
 
 class UINodeArray(UINode):
     """Array bus component containing 2, 4, or 8 nodes with Bits-backed integer conversion."""
@@ -166,6 +173,7 @@ class UINodeArray(UINode):
             for n, b in zip(self.nodes, bits):
                 n.state = bool(b)
 
+<<<<<<< HEAD
     def sync_value_from_nodes(self) -> None:
         """Syncs array integer value from node states."""
         if self.array_type == "input":
@@ -175,6 +183,14 @@ class UINodeArray(UINode):
     def run(self):
         """Preserves subnode states for input arrays."""
         pass
+=======
+    def run(self):
+        """Syncs bits to states for input arrays."""
+        if self.array_type == "input":
+            bits = Bits.from_int(self._input_value, self.array_size)
+            for n, b in zip(self.nodes, bits):
+                n.state = bool(b)
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
 
     def collidepoint(self, pos: Tuple[float, float], canvas_size: Tuple[float, float]) -> bool:
         mx, my = pos

@@ -214,6 +214,7 @@ def handle_sim_event(app: Any, event: pygame.event.Event):
     zoom = getattr(app, "zoom_scale", 1.0)
     keys = pygame.key.get_pressed()
 
+<<<<<<< HEAD
     # 0. Handle text typing when editing a node name
     if getattr(app, "editing_node", None) is not None and event.type == pygame.KEYDOWN:
         from LogicGate_RW.ui.left_panel import is_name_valid_and_unique
@@ -235,6 +236,8 @@ def handle_sim_event(app: Any, event: pygame.event.Event):
             return True
         return True
 
+=======
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
     # 1. Right Click deselects everything
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
         app.clear_selection()
@@ -244,8 +247,11 @@ def handle_sim_event(app: Any, event: pygame.event.Event):
         app.dragged_connector = None
         if hasattr(app, "editing_array_value_node"):
             app.editing_array_value_node = None
+<<<<<<< HEAD
         if hasattr(app, "editing_node"):
             app.editing_node = None
+=======
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
         return True
 
     # 2. Viewport panning with Space + Mouse Drag

@@ -79,6 +79,7 @@ class UILogicComponent(UINode):
             )
             self.outputs.append(pin)
 
+<<<<<<< HEAD
         # Setup composite inner circuit if provided
         if self.is_composite:
             from LogicGate_RW.core.circuit_bridge import deserialize_inner_circuit
@@ -125,6 +126,11 @@ class UILogicComponent(UINode):
                 ext_out.state = int_out.state
 
         elif self.logic_backend is not None:
+=======
+    def run(self) -> None:
+        """Executes simulation step using the underlying include.LogicTable or include.SimComponent."""
+        if self.logic_backend is not None:
+>>>>>>> 6971f0f705df3300d6dac6510d05749867e5d60d
             # Transfer input pin states into logic backend
             in_states = [p.state for p in self.inputs]
             if hasattr(self.logic_backend, "set_input_state"):
