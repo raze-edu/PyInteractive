@@ -319,7 +319,7 @@ def confirm_builder_compilation(app: Any) -> bool:
         component_def["logic_table"] = table
 
     # Append to LogicComponentLib.json
-    lib_path = 'D:\\PyInteractive\\mode\\LogicGate\\LogicComponentLib.json'
+    lib_path = 'mode/LogicGate/LogicComponentLib.json'
     templates = []
     if os.path.exists(lib_path):
         try:
@@ -340,7 +340,7 @@ def confirm_builder_compilation(app: Any) -> bool:
         return False
 
     # Also copy to root directory file to keep it synced
-    root_lib_path = 'D:\\PyInteractive\\LogicComponentLib.json'
+    root_lib_path = 'LogicComponentLib.json'
     try:
         with open(root_lib_path, "w") as f:
             json.dump(templates, f, indent=2)

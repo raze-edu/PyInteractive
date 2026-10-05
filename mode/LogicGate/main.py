@@ -1,6 +1,8 @@
 import sys
 import os
 import json
+from typing import Optional, Tuple
+
 
 # Add the project root directory to sys.path to allow running this script directly
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

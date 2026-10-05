@@ -5,7 +5,7 @@ from typing import Any, Tuple, List
 
 # List of available components inside the GUI picker
 # Structured as list of dicts: {"type": "input"/"output"/"gate", "name": str, "template": dict/None}
-def load_gui_library(lib_path: str = 'D:\\PyInteractive\\mode\\LogicGate\\LogicComponentLib.json') -> List[dict]:
+def load_gui_library(lib_path: str = 'mode/LogicGate/LogicComponentLib.json') -> List[dict]:
     """Loads all logic component templates from the local library file."""
     items = [
         {"type": "array", "name": "Input Array 2H", "template": None},

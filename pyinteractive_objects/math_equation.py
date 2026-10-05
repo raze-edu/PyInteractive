@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pygame
 from typing import List, Tuple, Any, Optional, Dict
 
@@ -147,7 +148,7 @@ class ExpoFunction(MathFunction):
 
     def format(
         self,
-        args: List[List[ASTNode]],
+        args: List[List[Any]],
         renderer: "MathEquationRenderer",
         font_size: int,
         color: Tuple[int, int, int]

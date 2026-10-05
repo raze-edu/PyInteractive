@@ -632,7 +632,7 @@ def update_slider_val(app: Any, mouse_x: int):
 def delete_component_from_library(app: Any, component_name: str):
     """Removes a component template completely from LogicComponentLib.json and group memberships."""
     # 1. Load from file
-    lib_path = 'D:\\PyInteractive\\mode\\LogicGate\\LogicComponentLib.json'
+    lib_path = 'mode/LogicGate/LogicComponentLib.json'
     templates = []
     if os.path.exists(lib_path):
         try:
@@ -653,7 +653,7 @@ def delete_component_from_library(app: Any, component_name: str):
         return
 
     # Sync to root file
-    root_lib_path = 'D:\\PyInteractive\\LogicComponentLib.json'
+    root_lib_path = 'LogicComponentLib.json'
     try:
         with open(root_lib_path, "w") as f:
             json.dump(templates, f, indent=2)
