@@ -8,6 +8,8 @@ from .geometry_cut import GeometryCutExercise
 from .dot_plot import DotPlotExercise
 from .multiple_choice import MultipleChoiceExercise
 from .type_answer import TypeAnswerExercise
+from .coordinate_grid import CoordinateGridExercise
+from .cylinder_3d import Cylinder3DExercise
 
 __all__ = [
     "BaseExercise",
@@ -18,5 +20,7 @@ __all__ = [
     "GeometryCutExercise",
     "DotPlotExercise",
     "MultipleChoiceExercise",
-    "TypeAnswerExercise"
+    "TypeAnswerExercise",
+    "CoordinateGridExercise",
+    "Cylinder3DExercise"
 ]

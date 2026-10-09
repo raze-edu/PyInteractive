@@ -9,7 +9,9 @@ from .exercises import (
     GeometryCutExercise,
     DotPlotExercise,
     MultipleChoiceExercise,
-    TypeAnswerExercise
+    TypeAnswerExercise,
+    CoordinateGridExercise,
+    Cylinder3DExercise
 )
 
 def create_default_curriculum() -> List[BaseExercise]:
@@ -187,5 +189,121 @@ def create_default_curriculum() -> List[BaseExercise]:
             choices=["28", "-28", "4"],
             correct_choice_index=0,
             help_tip="Apply the distributive property: multiply the factor outside by each term inside the parentheses: a(b + c) = ab + ac."
+        ),
+
+        # 17. Place the point at (3, 5) on coordinate grid (todo snapshots)
+        CoordinateGridExercise(
+            prompt="Place the point at (3, 5)",
+            target_points=[(3, 5)],
+            mode="place_point",
+            x_range=(-6, 6),
+            y_range=(-6, 6),
+            instruction="Click or drag to place the point at (3, 5) on the coordinate grid."
+        ),
+
+        # 18. Create a graph with points at... (todo snapshots)
+        CoordinateGridExercise(
+            prompt="Create a graph with points at:",
+            target_points=[(-2, 0), (0, 1), (2, 2), (4, 3)],
+            mode="create_graph",
+            x_range=(-6, 6),
+            y_range=(-6, 6),
+            table_data=[(-2, 0), (0, 1), (2, 2), (4, 3)],
+            instruction="Plot all points from the table and adjust them on the graph."
+        ),
+
+        # 19. Show x on the line from 2D coordinate grid (todo snapshots)
+        NumberLineExercise(
+            title="Show x on the line",
+            equation_format="Show x on the line",
+            correct_value=-4,
+            ticks=[-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+            initial_tick_index=5,
+            prompt_grid_point=(-4, 2),
+            highlight_coord="x",
+            help_tip="Look at the x-axis projection of the plotted grid point and slide the marker to -4."
+        ),
+
+        # 20. Enter the x-value with on-screen keypad (todo snapshots)
+        TypeAnswerExercise(
+            title="Enter the x-value",
+            equation_format="x = [ ]",
+            correct_answer="3",
+            prompt_coord=(3, -2),
+            highlight_coord="x",
+            show_keypad=True,
+            help_tip="The first number in the coordinate pair (x, y) is the x-value."
+        ),
+
+        # 21. Match the pairs: Coordinate Grid to coordinate pair (todo snapshots)
+        MatchPairsExercise(
+            title="Match the pairs",
+            grid_pairs=[
+                ("(3, 4)", (3, 4)),
+                ("(-2, 3)", (-2, 3)),
+                ("(1, -3)", (1, -3))
+            ],
+            help_tip="Match each coordinate notation with its plotted location on the grid."
+        ),
+
+        # 22. Logarithm Concept speech bubble (todo snapshots)
+        MultipleChoiceExercise(
+            title="Logarithm concept",
+            question_text="Fill in the blank [ ]",
+            character_speech="Logarithms undo exponentiation! Since 2³ = 8, then log₂(8) is _____.",
+            choices=["3", "2", "8"],
+            correct_choice_index=0,
+            help_tip="A logarithm outputs the exponent required to produce the value from the base."
+        ),
+
+        # 23. Complete the pattern table: Exponential to Logarithmic (todo snapshots)
+        MultipleChoiceExercise(
+            title="Complete the pattern",
+            question_text="Select the missing logarithmic equation [ ]",
+            choices=["log_7(49) = 2", "log_2(49) = 7", "log_7(2) = 49"],
+            correct_choice_index=0,
+            diagram_type="pattern_table",
+            diagram_data={
+                "headers": ["Exponential", "Logarithmic"],
+                "rows": [
+                    ("7¹ = 7", "log_7(7) = 1"),
+                    ("7² = 49", "?")
+                ]
+            },
+            help_tip="Observe how base 7 and exponent 2 translate to log_7(49) = 2."
+        ),
+
+        # 24. Create a base area: Interactive 3D Cylinder (todo snapshots)
+        Cylinder3DExercise(
+            prompt="Create a base area of 9π",
+            target_val=9,
+            mode="base_area",
+            min_slider=1,
+            max_slider=8,
+            initial_slider=2,
+            instruction="Adjust the slider until radius r produces a base area of 9π."
+        ),
+
+        # 25. Create a volume: Interactive 3D Cylinder (todo snapshots)
+        Cylinder3DExercise(
+            prompt="Create a volume of 36π",
+            target_val=36,
+            mode="volume",
+            fixed_radius=3,
+            min_slider=1,
+            max_slider=10,
+            initial_slider=2,
+            instruction="Adjust the height slider to achieve a volume of 36π (since π · 3² · h = 36π)."
+        ),
+
+        # 26. Cross section of a cylinder (todo snapshots)
+        MultipleChoiceExercise(
+            title="Cross section",
+            question_text="Select the cross section that is parallel to the base of the cylinder.",
+            choices=["circle", "triangle", "rectangle"],
+            correct_choice_index=0,
+            diagram_type="cylinder_3d",
+            diagram_data={"r": 3, "h": 5, "show_r": False, "show_h": False, "highlight_base": True},
+            help_tip="Slicing a cylinder parallel to its circular base yields a congruent circle."
         ),
     ]

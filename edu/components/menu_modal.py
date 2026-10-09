@@ -26,8 +26,11 @@ class GeneratorMenu:
         ("subtraction", "Subtraction", "−", (52, 152, 219)),
         ("multiplication", "Multiplication", "×", (155, 89, 182)),
         ("division", "Division", "÷", (243, 156, 18)),
+        ("coordinates", "Coordinates", "xy", (52, 152, 219)),
+        ("logarithms", "Logarithms", "log", (155, 89, 182)),
+        ("cylinder", "Cylinder 3D", "3D", (46, 204, 113)),
         ("mixed", "Mixed Ops", "🔀", (231, 76, 60)),
-        ("curriculum", "Original 16", "★", (149, 165, 166)),
+        ("curriculum", "All Lessons", "★", (149, 165, 166)),
     ]
 
     DIFFICULTIES = [
@@ -143,7 +146,7 @@ class GeneratorMenu:
 
         # Modal window container
         mw = min(880, screen_rect.width - 40)
-        mh = min(680, screen_rect.height - 40)
+        mh = min(710, screen_rect.height - 20)
         mx = (screen_rect.width - mw) // 2
         my = (screen_rect.height - mh) // 2
         modal_rect = pygame.Rect(mx, my, mw, mh)
@@ -170,21 +173,21 @@ class GeneratorMenu:
         sec_font = get_font(18, bold=True)
         sec1_surf = sec_font.render("1. SELECT OPERATION", True, (119, 142, 155))
         screen.blit(sec1_surf, (mx + 40, cur_y))
-        cur_y += 30
+        cur_y += 26
 
-        # 6 Operation Cards (2 rows x 3 columns)
+        # 9 Operation Cards (3 rows x 3 columns)
         self.op_rects = []
         cols = 3
-        rows = 2
+        rows = 3
         cw = (mw - 80 - (cols - 1) * 14) // cols
-        ch = 72
-        icon_font = get_font(24, bold=True)
-        op_label_font = get_font(18, bold=True)
+        ch = 56
+        icon_font = get_font(20, bold=True)
+        op_label_font = get_font(17, bold=True)
 
         for i, (op_key, op_name, op_symbol, op_color) in enumerate(self.OPERATIONS):
             r = i // cols
             c = i % cols
-            card_rect = pygame.Rect(mx + 40 + c * (cw + 14), cur_y + r * (ch + 12), cw, ch)
+            card_rect = pygame.Rect(mx + 40 + c * (cw + 14), cur_y + r * (ch + 8), cw, ch)
             self.op_rects.append((card_rect, op_key))
 
             is_sel = (self.selected_op == op_key)
@@ -194,11 +197,11 @@ class GeneratorMenu:
             border = op_color if is_sel else ((53, 75, 87) if is_hov else CARD_BORDER)
             border_w = 3 if is_sel else 2
 
-            draw_rounded_rect(screen, card_rect, bg, radius=14, border_color=border, border_width=border_w)
+            draw_rounded_rect(screen, card_rect, bg, radius=12, border_color=border, border_width=border_w)
 
             # Icon badge
-            badge_r = 18
-            bx = card_rect.x + 28
+            badge_r = 16
+            bx = card_rect.x + 24
             by = card_rect.centery
             pygame.draw.circle(screen, op_color, (bx, by), badge_r)
             sym_surf = icon_font.render(op_symbol, True, (19, 31, 36))
@@ -206,9 +209,9 @@ class GeneratorMenu:
 
             # Name label
             lbl_surf = op_label_font.render(op_name, True, TEXT_WHITE)
-            screen.blit(lbl_surf, (bx + 26, by - lbl_surf.get_height() // 2))
+            screen.blit(lbl_surf, (bx + 24, by - lbl_surf.get_height() // 2))
 
-        cur_y += 2 * (ch + 12) + 20
+        cur_y += rows * (ch + 8) + 16
 
         # Section 2: Choose Difficulty
         sec2_surf = sec_font.render("2. SELECT DIFFICULTY", True, (119, 142, 155))

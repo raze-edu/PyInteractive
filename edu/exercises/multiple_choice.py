@@ -6,7 +6,10 @@ from ..theme import (
     get_font,
     draw_rounded_rect,
     draw_pie_chart,
+    draw_cylinder_3d,
+    draw_coordinate_grid,
     ACCENT_BLUE,
+    ACCENT_BLUE_LIGHT,
     CARD_BG,
     CARD_BORDER,
     CARD_HOVER,
@@ -100,9 +103,13 @@ class MultipleChoiceExercise(BaseExercise):
             # Render equation / question prompt
             cur_y = self._draw_equation_prompt(screen, area_rect, cur_y)
 
-        # Optional: Geometry Grid Diagram
+        # Optional Diagrams
         if self.diagram_type == "grid_rectangle":
             cur_y = self._draw_grid_rectangle(screen, area_rect, cur_y)
+        elif self.diagram_type == "cylinder_3d":
+            cur_y = self._draw_cylinder_diagram(screen, area_rect, cur_y)
+        elif self.diagram_type == "pattern_table":
+            cur_y = self._draw_pattern_table(screen, area_rect, cur_y)
 
         # Choice Cards
         self._draw_choices(screen, area_rect, cur_y)
@@ -224,17 +231,91 @@ class MultipleChoiceExercise(BaseExercise):
 
         return gy + gh + 35
 
+    def _draw_cylinder_diagram(self, screen: pygame.Surface, area_rect: pygame.Rect, start_y: int) -> int:
+        r = self.diagram_data.get("r", 3)
+        h = self.diagram_data.get("h", 5)
+        show_r = self.diagram_data.get("show_r", True)
+        show_h = self.diagram_data.get("show_h", True)
+        r_lbl = f"r = {r}" if show_r else None
+        h_lbl = f"h = {h}" if show_h else None
+        ba_lbl = self.diagram_data.get("base_area_label")
+
+        # Proportional cylinder scaling so it stays well-proportioned and avoids vertical clipping
+        rad_px = min(75, max(46, 42 + int(r * 4.2)))
+        h_px = min(80, max(46, 38 + int(h * 5.0)))
+        y_squash = 0.32
+        ry = max(10, int(rad_px * y_squash))
+
+        # Position cylinder: comfortable gap below question text
+        top_cy = start_y + ry + 15
+        cyl_center_y = top_cy + h_px // 2
+        cyl_bot_y = top_cy + h_px + ry
+
+        draw_cylinder_3d(
+            screen,
+            (area_rect.centerx, cyl_center_y),
+            radius_px=rad_px,
+            height_px=h_px,
+            y_squash=y_squash,
+            radius_label=r_lbl,
+            height_label=h_lbl,
+            base_area_label=ba_lbl,
+            highlight_base=self.diagram_data.get("highlight_base", True)
+        )
+        return cyl_bot_y + 20
+
+    def _draw_pattern_table(self, screen: pygame.Surface, area_rect: pygame.Rect, start_y: int) -> int:
+        cols = self.diagram_data.get("headers", ["Expression", "Value"])
+        rows = self.diagram_data.get("rows", [])
+        tw = 420
+        hdr_h = 36
+        row_h = 34
+        th = hdr_h + len(rows) * row_h
+        trect = pygame.Rect(area_rect.centerx - tw // 2, start_y + 5, tw, th)
+        draw_rounded_rect(screen, trect, CARD_BG, radius=10, border_color=CARD_BORDER, border_width=1)
+
+        # Center divider
+        pygame.draw.line(screen, CARD_BORDER, (trect.centerx, trect.top), (trect.centerx, trect.bottom), 1)
+        pygame.draw.line(screen, CARD_BORDER, (trect.left, trect.top + hdr_h), (trect.right, trect.top + hdr_h), 1)
+
+        hfont = get_font(16, bold=True)
+        rfont = get_font(16, bold=False)
+
+        # Headers
+        c1 = hfont.render(cols[0], True, ACCENT_BLUE)
+        screen.blit(c1, (trect.left + tw // 4 - c1.get_width() // 2, trect.top + 8))
+        c2 = hfont.render(cols[1], True, ACCENT_BLUE)
+        screen.blit(c2, (trect.left + 3 * tw // 4 - c2.get_width() // 2, trect.top + 8))
+
+        for i, (v1, v2) in enumerate(rows):
+            ry = trect.top + hdr_h + i * row_h
+            pygame.draw.line(screen, CARD_BORDER, (trect.left, ry + row_h), (trect.right, ry + row_h), 1)
+            s1 = rfont.render(str(v1), True, TEXT_WHITE)
+            screen.blit(s1, (trect.left + tw // 4 - s1.get_width() // 2, ry + 7))
+
+            # If v2 is '?', render it inside a highlighted blue box
+            if str(v2) == "?":
+                qbox = pygame.Rect(trect.left + 3 * tw // 4 - 20, ry + 4, 40, 26)
+                draw_rounded_rect(screen, qbox, CARD_SELECTED_BG, radius=6, border_color=CARD_SELECTED_BORDER, border_width=1)
+                qs = hfont.render("?", True, ACCENT_BLUE_LIGHT)
+                screen.blit(qs, qs.get_rect(center=qbox.center))
+            else:
+                s2 = rfont.render(str(v2), True, TEXT_WHITE)
+                screen.blit(s2, (trect.left + 3 * tw // 4 - s2.get_width() // 2, ry + 7))
+
+        return trect.bottom + 20
+
     def _draw_choices(self, screen: pygame.Surface, area_rect: pygame.Rect, start_y: int) -> None:
         self.choice_rects = []
         n = len(self.choices)
-        
+
         # If visual fractions diagram
         if self.diagram_type == "visual_fractions":
             cw = min(220, (area_rect.width - 80) // 2)
             ch = 140
             total_w = n * cw + (n - 1) * 24
             sx = area_rect.centerx - total_w // 2
-            
+
             for i, opt in enumerate(self.choices):
                 crect = pygame.Rect(sx + i * (cw + 24), start_y + 40, cw, ch)
                 self.choice_rects.append(crect)
@@ -243,29 +324,66 @@ class MultipleChoiceExercise(BaseExercise):
                 bg = CARD_SELECTED_BG if is_sel else (CARD_HOVER if is_hov else CARD_BG)
                 border = CARD_SELECTED_BORDER if is_sel else ((53, 75, 87) if is_hov else CARD_BORDER)
                 draw_rounded_rect(screen, crect, bg, radius=16, border_color=border, border_width=2)
-                
+
                 # Render pie option
                 num, den = map(int, opt.split("/"))
                 slices = [True] * num + [False] * (den - num)
                 draw_pie_chart(screen, crect.center, 46, den, slices, base_color=(24, 39, 46), fill_color=ACCENT_BLUE)
             return
 
+        # If visual coordinate grids diagram
+        if self.diagram_type == "visual_grids":
+            cw = 140
+            ch = 140
+            total_w = n * cw + (n - 1) * 16
+            sx = area_rect.centerx - total_w // 2
+
+            for i, opt in enumerate(self.choices):
+                crect = pygame.Rect(sx + i * (cw + 16), start_y + 20, cw, ch)
+                self.choice_rects.append(crect)
+                is_sel = (self.selected_index == i)
+                is_hov = (self.hovered_index == i)
+                bg = CARD_SELECTED_BG if is_sel else (CARD_HOVER if is_hov else CARD_BG)
+                border = CARD_SELECTED_BORDER if is_sel else ((53, 75, 87) if is_hov else CARD_BORDER)
+                draw_rounded_rect(screen, crect, bg, radius=14, border_color=border, border_width=2)
+
+                # Parse "(x, y)" or use diagram_data choice points
+                pts_data = self.diagram_data.get("choice_points", {}).get(i)
+                if pts_data is None:
+                    try:
+                        clean = opt.strip("() ").split(",")
+                        pts_data = (int(clean[0]), int(clean[1]))
+                    except Exception:
+                        pts_data = (0, 0)
+
+                inner_grid = crect.inflate(-16, -16)
+                draw_coordinate_grid(
+                    screen,
+                    inner_grid,
+                    x_range=self.diagram_data.get("x_range", (-4, 4)),
+                    y_range=self.diagram_data.get("y_range", (-4, 4)),
+                    highlight_point=pts_data,
+                    show_projections=True,
+                    show_labels=False
+                )
+            return
+
         # Standard vertical stacked buttons
         btn_w = min(480, area_rect.width - 80)
-        btn_h = 56
-        btn_gap = 14
+        btn_h = 48 if self.diagram_type else 52
+        btn_gap = 10 if self.diagram_type else 12
         sx = area_rect.centerx - btn_w // 2
-        opt_font = get_font(24, bold=True)
+        opt_font = get_font(22, bold=True)
 
         for i, opt in enumerate(self.choices):
             crect = pygame.Rect(sx, start_y + i * (btn_h + btn_gap), btn_w, btn_h)
             self.choice_rects.append(crect)
             is_sel = (self.selected_index == i)
             is_hov = (self.hovered_index == i)
-            
+
             bg = CARD_SELECTED_BG if is_sel else (CARD_HOVER if is_hov else CARD_BG)
             border = CARD_SELECTED_BORDER if is_sel else ((53, 75, 87) if is_hov else CARD_BORDER)
             draw_rounded_rect(screen, crect, bg, radius=14, border_color=border, border_width=2)
-            
+
             txt_surf = opt_font.render(opt, True, TEXT_WHITE)
             screen.blit(txt_surf, txt_surf.get_rect(center=crect.center))

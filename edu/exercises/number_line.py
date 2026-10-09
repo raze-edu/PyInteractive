@@ -5,7 +5,9 @@ from .base import BaseExercise
 from ..theme import (
     get_font,
     draw_rounded_rect,
+    draw_coordinate_grid,
     ACCENT_BLUE,
+    ACCENT_BLUE_LIGHT,
     TEXT_WHITE,
     TEXT_MUTED
 )
@@ -16,13 +18,18 @@ class NumberLineExercise(BaseExercise):
     
     def __init__(
         self,
-        equation_format: str,  # e.g. "210 - 60 - 15 = [ ]" or "[ ] = 400 - 10 - 5"
+        equation_format: str,  # e.g. "210 - 60 - 15 = [ ]" or "[ ] = 400 - 10 - 5" or "Show x on the line"
         correct_value: int,
         ticks: List[int],
         initial_tick_index: int = 0,
         title: str = "Answer on the line",
         help_tip: str = "Calculate the result of the equation and drag the slider to mark the correct value on the number line.",
-        help_faqs: Optional[List[Tuple[str, str]]] = None
+        help_faqs: Optional[List[Tuple[str, str]]] = None,
+        prompt_coord: Optional[Tuple[int, int]] = None,
+        highlight_coord: str = "x",
+        prompt_grid_point: Optional[Tuple[int, int]] = None,
+        x_range: Tuple[int, int] = (-5, 5),
+        y_range: Tuple[int, int] = (-5, 5)
     ):
         super().__init__(
             title=title,
@@ -37,6 +44,11 @@ class NumberLineExercise(BaseExercise):
         self.correct_value = correct_value
         self.ticks = ticks
         self.selected_index = initial_tick_index
+        self.prompt_coord = prompt_coord
+        self.highlight_coord = highlight_coord
+        self.prompt_grid_point = prompt_grid_point
+        self.x_range = x_range
+        self.y_range = y_range
         
         # Interactive / visual peg state
         self.current_peg_x: float = 0.0
@@ -122,52 +134,85 @@ class NumberLineExercise(BaseExercise):
         title_surf = title_font.render(self.title, True, TEXT_WHITE)
         screen.blit(title_surf, title_surf.get_rect(center=(area_rect.centerx, area_rect.y + 40)))
 
-        # 2. Equation Box
-        eq_font = get_font(40, bold=True)
-        eq_y = area_rect.y + 130
-        
-        # Format equation replacing [ ] with the selected value or input box
-        val_str = str(self.current_value) if self.selected_index >= 0 else ""
-        
-        # Render left and right parts around [ ]
-        parts = self.equation_format.split("[ ]")
-        box_w = max(60, len(val_str) * 24 + 24)
-        box_h = 56
-        
-        if len(parts) == 2:
-            left_text = parts[0].strip()
-            right_text = parts[1].strip()
+        # 2. Coordinate Grid / Coordinate Prompt / Equation Box
+        if self.prompt_grid_point is not None:
+            # Mini 2D coordinate grid prompt
+            grid_w, grid_h = 240, 200
+            grid_rect = pygame.Rect(area_rect.centerx - grid_w // 2, area_rect.y + 85, grid_w, grid_h)
+            draw_coordinate_grid(
+                screen,
+                grid_rect,
+                x_range=self.x_range,
+                y_range=self.y_range,
+                highlight_point=self.prompt_grid_point,
+                show_projections=True,
+                show_labels=True
+            )
+            self.line_y = area_rect.y + 365
+        elif self.prompt_coord is not None:
+            # Display (x, y) with highlighted target coordinate
+            eq_font = get_font(44, bold=True)
+            lbl_font = get_font(20, bold=False)
+            eq_y = area_rect.y + 140
+            px, py = self.prompt_coord
             
-            left_surf = eq_font.render(left_text, True, TEXT_WHITE) if left_text else None
-            right_surf = eq_font.render(right_text, True, TEXT_WHITE) if right_text else None
+            coord_str = f"({px}, {py})"
+            # Render instruction note above
+            note = f"Find the {'x-coordinate' if self.highlight_coord == 'x' else 'y-coordinate'}:"
+            note_surf = lbl_font.render(note, True, TEXT_MUTED)
+            screen.blit(note_surf, note_surf.get_rect(center=(area_rect.centerx, eq_y - 40)))
+
+            pill_rect = pygame.Rect(area_rect.centerx - 90, eq_y - 28, 180, 56)
+            draw_rounded_rect(screen, pill_rect, (24, 39, 46), radius=12, border_color=ACCENT_BLUE, border_width=2)
+            c_surf = eq_font.render(coord_str, True, TEXT_WHITE)
+            screen.blit(c_surf, c_surf.get_rect(center=pill_rect.center))
+            self.line_y = area_rect.y + 330
+        else:
+            eq_font = get_font(40, bold=True)
+            eq_y = area_rect.y + 130
             
-            total_w = box_w + 24
-            if left_surf:
-                total_w += left_surf.get_width() + 16
-            if right_surf:
-                total_w += right_surf.get_width() + 16
+            # Format equation replacing [ ] with the selected value or input box
+            val_str = str(self.current_value) if self.selected_index >= 0 else ""
+            
+            # Render left and right parts around [ ]
+            parts = self.equation_format.split("[ ]")
+            box_w = max(60, len(val_str) * 24 + 24)
+            box_h = 56
+            
+            if len(parts) == 2:
+                left_text = parts[0].strip()
+                right_text = parts[1].strip()
                 
-            cur_x = area_rect.centerx - total_w // 2
-            
-            if left_surf:
-                screen.blit(left_surf, (cur_x, eq_y - left_surf.get_height() // 2))
-                cur_x += left_surf.get_width() + 16
+                left_surf = eq_font.render(left_text, True, TEXT_WHITE) if left_text else None
+                right_surf = eq_font.render(right_text, True, TEXT_WHITE) if right_text else None
                 
-            box_rect = pygame.Rect(cur_x, eq_y - box_h // 2, box_w, box_h)
-            draw_rounded_rect(screen, box_rect, (24, 39, 46), radius=10, border_color=ACCENT_BLUE, border_width=3)
-            
-            if val_str:
-                val_surf = eq_font.render(val_str, True, ACCENT_BLUE)
-                screen.blit(val_surf, val_surf.get_rect(center=box_rect.center))
+                total_w = box_w + 24
+                if left_surf:
+                    total_w += left_surf.get_width() + 16
+                if right_surf:
+                    total_w += right_surf.get_width() + 16
+                    
+                cur_x = area_rect.centerx - total_w // 2
                 
-            cur_x += box_w + 16
-            if right_surf:
-                screen.blit(right_surf, (cur_x, eq_y - right_surf.get_height() // 2))
+                if left_surf:
+                    screen.blit(left_surf, (cur_x, eq_y - left_surf.get_height() // 2))
+                    cur_x += left_surf.get_width() + 16
+                    
+                box_rect = pygame.Rect(cur_x, eq_y - box_h // 2, box_w, box_h)
+                draw_rounded_rect(screen, box_rect, (24, 39, 46), radius=10, border_color=ACCENT_BLUE, border_width=3)
+                
+                if val_str:
+                    val_surf = eq_font.render(val_str, True, ACCENT_BLUE)
+                    screen.blit(val_surf, val_surf.get_rect(center=box_rect.center))
+                    
+                cur_x += box_w + 16
+                if right_surf:
+                    screen.blit(right_surf, (cur_x, eq_y - right_surf.get_height() // 2))
+            self.line_y = area_rect.y + 360
 
         # 3. Number Line Axis
         self.line_start_x = area_rect.centerx - 340
         self.line_end_x = area_rect.centerx + 340
-        self.line_y = area_rect.y + 360
         axis_color = (60, 80, 92)
         
         # Horizontal line

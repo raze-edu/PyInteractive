@@ -12,7 +12,9 @@ from .exercises import (
     MatchPairsExercise,
     TypeAnswerExercise,
     MultipleChoiceExercise,
-    FractionVisualExercise
+    FractionVisualExercise,
+    CoordinateGridExercise,
+    Cylinder3DExercise
 )
 
 class MathGenerator:
@@ -20,24 +22,30 @@ class MathGenerator:
 
     @staticmethod
     def generate_lesson(
-        operation: str = "addition",  # "addition", "subtraction", "multiplication", "division", "mixed"
+        operation: str = "addition",  # "addition", "subtraction", "multiplication", "division", "coordinates", "logarithms", "cylinder", "mixed"
         difficulty: str = "easy",     # "easy", "medium", "hard"
         count: int = 8
     ) -> List[BaseExercise]:
         """Generates a complete list of interactive exercises for the chosen operation and difficulty."""
         exercises: List[BaseExercise] = []
-        op_list = ["addition", "subtraction", "multiplication", "division"]
-        
-        # Cycle through diverse exercise types
-        exercise_types = ["number_line", "equation_slots", "type_answer", "multiple_choice", "match_pairs"]
-        
+        op_list = ["addition", "subtraction", "multiplication", "division", "coordinates", "logarithms", "cylinder"]
+
+        if operation == "coordinates":
+            exercise_types = ["place_point", "create_graph", "number_line", "type_answer", "multiple_choice", "match_pairs"]
+        elif operation == "logarithms":
+            exercise_types = ["concept", "pattern_table", "identify_parts", "multiple_choice", "match_pairs", "type_answer"]
+        elif operation == "cylinder":
+            exercise_types = ["cylinder_3d_base", "cylinder_3d_vol", "cross_section", "radius_choice", "base_area_choice", "volume_choice"]
+        else:
+            exercise_types = ["number_line", "equation_slots", "type_answer", "multiple_choice", "match_pairs"]
+
         for i in range(count):
             cur_op = random.choice(op_list) if operation == "mixed" else operation
             ex_type = exercise_types[i % len(exercise_types)]
-            
+
             ex = MathGenerator.generate_single(cur_op, difficulty, ex_type)
             exercises.append(ex)
-            
+
         return exercises
 
     @staticmethod
@@ -51,6 +59,12 @@ class MathGenerator:
             return MathGenerator._gen_multiplication(difficulty, exercise_type)
         elif operation == "division":
             return MathGenerator._gen_division(difficulty, exercise_type)
+        elif operation == "coordinates":
+            return MathGenerator._gen_coordinates(difficulty, exercise_type)
+        elif operation == "logarithms":
+            return MathGenerator._gen_logarithms(difficulty, exercise_type)
+        elif operation == "cylinder":
+            return MathGenerator._gen_cylinder(difficulty, exercise_type)
         else:
             return MathGenerator._gen_addition(difficulty, exercise_type)
 
@@ -403,4 +417,282 @@ class MathGenerator:
                 text_pairs=pairs,
                 title="Match the pairs",
                 help_tip="Solve each division problem and link it to its matching quotient."
+            )
+
+    # --------------------------------------------------------------------------
+    # CARTESIAN COORDINATES & GRAPHING
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def _gen_coordinates(difficulty: str, exercise_type: str) -> BaseExercise:
+        bound = 4 if difficulty == "easy" else (6 if difficulty == "medium" else 8)
+        x_range = (-bound - 1, bound + 1)
+        y_range = (-bound - 1, bound + 1)
+
+        # Generate a non-zero coordinate
+        x = random.choice([v for v in range(-bound, bound + 1) if v != 0])
+        y = random.choice([v for v in range(-bound, bound + 1) if v != 0])
+
+        if exercise_type == "place_point":
+            return CoordinateGridExercise(
+                prompt=f"Place the point at ({x}, {y})",
+                target_points=[(x, y)],
+                mode="place_point",
+                x_range=x_range,
+                y_range=y_range,
+                instruction="Click or drag to place the point on the coordinate grid."
+            )
+
+        elif exercise_type == "create_graph":
+            slope = random.choice([-2, -1, 1, 2])
+            intercept = random.choice([-2, -1, 0, 1, 2])
+            xs = [-2, 0, 2] if bound >= 4 else [-1, 0, 1]
+            table_pts = [(xi, slope * xi + intercept) for xi in xs]
+            return CoordinateGridExercise(
+                prompt="Create a graph with points at:",
+                target_points=table_pts,
+                mode="create_graph",
+                x_range=x_range,
+                y_range=y_range,
+                table_data=table_pts,
+                instruction="Plot all points from the table and adjust them on the graph."
+            )
+
+        elif exercise_type == "number_line":
+            target = x if random.random() < 0.5 else y
+            coord_name = "x" if target == x else "y"
+            ticks = list(range(x_range[0], x_range[1] + 1))
+            return NumberLineExercise(
+                equation_format=f"Show {coord_name} on the line",
+                correct_value=target,
+                ticks=ticks,
+                initial_tick_index=len(ticks) // 2,
+                title=f"Show {coord_name} on the line",
+                help_tip=f"Identify the {coord_name}-coordinate of ({x}, {y}) and locate it on the number line.",
+                prompt_grid_point=(x, y) if random.random() < 0.5 else None,
+                prompt_coord=(x, y) if random.random() >= 0.5 else None,
+                highlight_coord=coord_name
+            )
+
+        elif exercise_type == "type_answer":
+            target = x if random.random() < 0.5 else y
+            coord_name = "x" if target == x else "y"
+            return TypeAnswerExercise(
+                equation_format=f"{coord_name} = [ ]",
+                correct_answer=str(target),
+                title=f"Enter the {coord_name}-value",
+                help_tip=f"Find the {coord_name}-coordinate and type the number into the answer box.",
+                prompt_grid_point=(x, y) if random.random() < 0.5 else None,
+                prompt_coord=(x, y) if random.random() >= 0.5 else None,
+                highlight_coord=coord_name,
+                show_keypad=True
+            )
+
+        elif exercise_type == "multiple_choice":
+            choices = [f"({x}, {y})", f"({-x}, {y})", f"({x}, {-y})"]
+            choice_pts = {0: (x, y), 1: (-x, y), 2: (x, -y)}
+            return MultipleChoiceExercise(
+                title="Select the match",
+                question_text=f"Which graph represents ({x}, {y})?",
+                choices=choices,
+                correct_choice_index=0,
+                diagram_type="visual_grids",
+                diagram_data={"choice_points": choice_pts, "x_range": (-5, 5), "y_range": (-5, 5)},
+                help_tip="Look for the point plotted at the given x and y values."
+            )
+
+        else:  # match_pairs
+            pts = [
+                (random.choice([-4, -3, -2, 2, 3]), random.choice([-4, -3, 2, 3, 4]))
+                for _ in range(3)
+            ]
+            grid_pairs = [(f"({px}, {py})", (px, py)) for px, py in pts]
+            return MatchPairsExercise(
+                grid_pairs=grid_pairs,
+                title="Match the pairs",
+                help_tip="Match each coordinate pair with its plotted point on the grid."
+            )
+
+    # --------------------------------------------------------------------------
+    # LOGARITHMS & EXPONENTIAL FUNCTIONS
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def _gen_logarithms(difficulty: str, exercise_type: str) -> BaseExercise:
+        if difficulty == "easy":
+            b = random.choice([2, 3, 5, 10])
+            exp = random.choice([1, 2, 3])
+        elif difficulty == "medium":
+            b = random.choice([2, 4, 6, 7])
+            exp = random.choice([2, 3, 4])
+        else:
+            b = random.choice([2, 3, 5, 8])
+            exp = random.choice([3, 4, 5])
+
+        val = b ** exp
+
+        if exercise_type == "concept":
+            speech = f"Logarithms invert exponentials. Since {b}^{exp} = {val}, log_{b}({val}) is _____."
+            return MultipleChoiceExercise(
+                title="Logarithm concept",
+                question_text="Fill in the blank [ ]",
+                character_speech=speech,
+                choices=[str(exp), str(b), str(val)],
+                correct_choice_index=0,
+                help_tip="A logarithm answers the question: to what power must the base be raised to produce the argument?"
+            )
+
+        elif exercise_type == "pattern_table":
+            rows = [
+                (f"{b}^1 = {b}", f"log_{b}({b}) = 1"),
+                (f"{b}^2 = {b**2}", f"log_{b}({b**2}) = 2"),
+                (f"{b}^{exp} = {val}", "?")
+            ]
+            choices = [f"log_{b}({val}) = {exp}", f"log_{val}({b}) = {exp}", f"log_{b}({exp}) = {val}"]
+            return MultipleChoiceExercise(
+                title="Complete the pattern",
+                question_text="Select the missing logarithmic equation [ ]",
+                choices=choices,
+                correct_choice_index=0,
+                diagram_type="pattern_table",
+                diagram_data={"headers": ["Exponential", "Logarithmic"], "rows": rows},
+                help_tip="Follow the row-by-row pattern connecting exponential equations to logarithmic form."
+            )
+
+        elif exercise_type == "identify_parts":
+            target_part = random.choice(["base", "argument", "exponent"])
+            if target_part == "base":
+                correct_ans = str(b)
+                distractors = [str(val), str(exp)]
+            elif target_part == "argument":
+                correct_ans = str(val)
+                distractors = [str(b), str(exp)]
+            else:
+                correct_ans = str(exp)
+                distractors = [str(b), str(val)]
+
+            choices = [correct_ans] + distractors
+            return MultipleChoiceExercise(
+                title="Select the part",
+                question_text=f"In the equation log_{b}({val}) = {exp}, select the {target_part}.",
+                choices=choices,
+                correct_choice_index=0,
+                help_tip=f"The base is {b}, the argument inside is {val}, and the result is the exponent {exp}."
+            )
+
+        elif exercise_type == "multiple_choice":
+            choices = [
+                f"log_{b}({val}) = {exp}",
+                f"log_{val}({b}) = {exp}",
+                f"log_{b}({exp}) = {val}"
+            ]
+            return MultipleChoiceExercise(
+                title="Select the match",
+                question_text=f"Which logarithm matches {b}^{exp} = {val}?",
+                choices=choices,
+                correct_choice_index=0,
+                help_tip=f"b^y = x translates directly to log_b(x) = y."
+            )
+
+        elif exercise_type == "type_answer":
+            return TypeAnswerExercise(
+                equation_format=f"log_{b}({val}) = [ ]",
+                correct_answer=str(exp),
+                title="Evaluate logarithm",
+                help_tip=f"Determine the power needed on base {b} to equal {val}."
+            )
+
+        else:  # match_pairs
+            pairs = []
+            test_bases = [(2, 3), (3, 2), (5, 2)]
+            for tb, te in test_bases:
+                pairs.append((f"log_{tb}({tb**te})", str(te)))
+            return MatchPairsExercise(
+                text_pairs=pairs,
+                title="Match the pairs",
+                help_tip="Match each logarithm expression with its calculated exponent value."
+            )
+
+    # --------------------------------------------------------------------------
+    # CYLINDER 3D GEOMETRY & VOLUME
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def _gen_cylinder(difficulty: str, exercise_type: str) -> BaseExercise:
+        r = random.randint(2, 4) if difficulty == "easy" else (random.randint(3, 6) if difficulty == "medium" else random.randint(4, 8))
+        h = random.randint(3, 6) if difficulty == "easy" else (random.randint(4, 8) if difficulty == "medium" else random.randint(5, 10))
+
+        base_area = r * r
+        volume = base_area * h
+
+        if exercise_type == "cylinder_3d_base":
+            return Cylinder3DExercise(
+                prompt=f"Create a base area of {base_area}π",
+                target_val=base_area,
+                mode="base_area",
+                min_slider=1,
+                max_slider=8,
+                initial_slider=max(1, (r + 2) % 8),
+                instruction="Drag the slider to adjust the radius and match the base area."
+            )
+
+        elif exercise_type == "cylinder_3d_vol":
+            return Cylinder3DExercise(
+                prompt=f"Create a volume of {volume}π",
+                target_val=volume,
+                mode="volume",
+                fixed_radius=r,
+                min_slider=1,
+                max_slider=10,
+                initial_slider=max(1, (h + 3) % 10),
+                instruction="Drag the slider to adjust height and achieve the target volume."
+            )
+
+        elif exercise_type == "cross_section":
+            return MultipleChoiceExercise(
+                title="Cross section",
+                question_text="Select the cross section parallel to the base of the cylinder.",
+                choices=["circle", "triangle", "rectangle"],
+                correct_choice_index=0,
+                diagram_type="cylinder_3d",
+                diagram_data={"r": r, "h": h, "show_r": False, "show_h": False, "highlight_base": True},
+                help_tip="A plane slicing horizontally parallel to the circular base produces a circle."
+            )
+
+        elif exercise_type == "radius_choice":
+            choices = [str(r), str(h), str(r + 2)]
+            return MultipleChoiceExercise(
+                title="Cylinder dimensions",
+                question_text="Select the length of the radius of the base.",
+                choices=choices,
+                correct_choice_index=0,
+                diagram_type="cylinder_3d",
+                diagram_data={"r": r, "h": h, "show_r": True, "show_h": True},
+                help_tip="The radius is the distance from the center of the base circle to its edge."
+            )
+
+        elif exercise_type == "base_area_choice":
+            choices = [f"{base_area}π", f"{2 * r}π", f"{r * h}π"]
+            return MultipleChoiceExercise(
+                title="Base area",
+                question_text="Select the area of the base of the cylinder.",
+                choices=choices,
+                correct_choice_index=0,
+                diagram_type="cylinder_3d",
+                diagram_data={"r": r, "h": h, "show_r": True, "show_h": False, "highlight_base": True},
+                help_tip="Base area formula is A = π · r²."
+            )
+
+        else:  # volume_choice
+            choices = [f"{volume}π", f"{base_area + h}π", f"{r * h}π"]
+            return MultipleChoiceExercise(
+                title="Cylinder volume",
+                question_text="Select the volume of the cylinder.",
+                choices=choices,
+                correct_choice_index=0,
+                diagram_type="cylinder_3d",
+                diagram_data={
+                    "r": r,
+                    "h": h,
+                    "show_r": True,
+                    "show_h": True,
+                },
+                help_tip="Volume of a cylinder is base area times height: V = (π · r²) · h."
             )

@@ -251,3 +251,301 @@ def draw_pie_chart(
         
     # Draw outer ring
     pygame.draw.circle(surface, border_color, (cx, cy), radius, width=2)
+
+
+def draw_dashed_line(
+    surface: pygame.Surface,
+    color: Tuple[int, int, int],
+    p1: Tuple[int, int],
+    p2: Tuple[int, int],
+    dash_len: int = 6,
+    space_len: int = 4,
+    width: int = 2
+) -> None:
+    """Draws a dashed line between two points."""
+    x1, y1 = p1
+    x2, y2 = p2
+    dx = x2 - x1
+    dy = y2 - y1
+    dist = math.hypot(dx, dy)
+    if dist < 1:
+        return
+    vx = dx / dist
+    vy = dy / dist
+    curr = 0.0
+    while curr < dist:
+        end_d = min(curr + dash_len, dist)
+        sp = (int(x1 + vx * curr), int(y1 + vy * curr))
+        ep = (int(x1 + vx * end_d), int(y1 + vy * end_d))
+        pygame.draw.line(surface, color, sp, ep, width)
+        curr += dash_len + space_len
+
+
+def coord_to_pixel(
+    x: float,
+    y: float,
+    rect: pygame.Rect,
+    x_range: Tuple[float, float],
+    y_range: Tuple[float, float]
+) -> Tuple[int, int]:
+    """Converts mathematical Cartesian coordinates (x, y) to surface pixels."""
+    x_min, x_max = x_range
+    y_min, y_max = y_range
+    px = rect.left + int(((x - x_min) / (x_max - x_min)) * rect.width)
+    py = rect.bottom - int(((y - y_min) / (y_max - y_min)) * rect.height)
+    return px, py
+
+
+def pixel_to_coord(
+    px: int,
+    py: int,
+    rect: pygame.Rect,
+    x_range: Tuple[float, float],
+    y_range: Tuple[float, float]
+) -> Tuple[float, float]:
+    """Converts surface pixels to mathematical Cartesian coordinates (x, y)."""
+    x_min, x_max = x_range
+    y_min, y_max = y_range
+    x = x_min + ((px - rect.left) / max(1, rect.width)) * (x_max - x_min)
+    y = y_min + ((rect.bottom - py) / max(1, rect.height)) * (y_max - y_min)
+    return x, y
+
+
+def draw_coordinate_grid(
+    surface: pygame.Surface,
+    rect: pygame.Rect,
+    x_range: Tuple[float, float] = (-5, 5),
+    y_range: Tuple[float, float] = (-5, 5),
+    points: Optional[List[Tuple[float, float]]] = None,
+    lines: Optional[List[List[Tuple[float, float]]]] = None,
+    highlight_point: Optional[Tuple[float, float]] = None,
+    show_projections: bool = False,
+    show_labels: bool = True,
+    show_axes: bool = True,
+    grid_color: Tuple[int, int, int] = (30, 48, 60),
+    axis_color: Tuple[int, int, int] = (140, 160, 180),
+    point_color: Tuple[int, int, int] = ACCENT_BLUE,
+    point_radius: int = 7,
+    font: Optional[pygame.font.Font] = None
+) -> None:
+    """Draws a Cartesian coordinate grid with optional points, projection lines, and curves."""
+    if font is None:
+        font = get_font(14, bold=False)
+
+    x_min, x_max = int(x_range[0]), int(x_range[1])
+    y_min, y_max = int(y_range[0]), int(y_range[1])
+
+    # Background card
+    draw_rounded_rect(surface, rect, CARD_BG, radius=8, border_color=CARD_BORDER, border_width=1)
+
+    # Grid lines
+    for x in range(x_min, x_max + 1):
+        p_top = coord_to_pixel(x, y_max, rect, x_range, y_range)
+        p_bot = coord_to_pixel(x, y_min, rect, x_range, y_range)
+        pygame.draw.line(surface, grid_color, p_top, p_bot, 1)
+
+    for y in range(y_min, y_max + 1):
+        p_left = coord_to_pixel(x_min, y, rect, x_range, y_range)
+        p_right = coord_to_pixel(x_max, y, rect, x_range, y_range)
+        pygame.draw.line(surface, grid_color, p_left, p_right, 1)
+
+    # Axes
+    if show_axes:
+        # X-axis (y = 0)
+        if y_min <= 0 <= y_max:
+            ax_left = coord_to_pixel(x_min, 0, rect, x_range, y_range)
+            ax_right = coord_to_pixel(x_max, 0, rect, x_range, y_range)
+            pygame.draw.line(surface, axis_color, ax_left, ax_right, 2)
+            # Arrow right
+            pygame.draw.polygon(surface, axis_color, [
+                (ax_right[0], ax_right[1]),
+                (ax_right[0] - 6, ax_right[1] - 4),
+                (ax_right[0] - 6, ax_right[1] + 4)
+            ])
+            # Arrow left
+            pygame.draw.polygon(surface, axis_color, [
+                (ax_left[0], ax_left[1]),
+                (ax_left[0] + 6, ax_left[1] - 4),
+                (ax_left[0] + 6, ax_left[1] + 4)
+            ])
+
+        # Y-axis (x = 0)
+        if x_min <= 0 <= x_max:
+            ay_top = coord_to_pixel(0, y_max, rect, x_range, y_range)
+            ay_bot = coord_to_pixel(0, y_min, rect, x_range, y_range)
+            pygame.draw.line(surface, axis_color, ay_top, ay_bot, 2)
+            # Arrow top
+            pygame.draw.polygon(surface, axis_color, [
+                (ay_top[0], ay_top[1]),
+                (ay_top[0] - 4, ay_top[1] + 6),
+                (ay_top[0] + 4, ay_top[1] + 6)
+            ])
+            # Arrow bot
+            pygame.draw.polygon(surface, axis_color, [
+                (ay_bot[0], ay_bot[1]),
+                (ay_bot[0] - 4, ay_bot[1] - 6),
+                (ay_bot[0] + 4, ay_bot[1] - 6)
+            ])
+
+    # Axis tick numbers
+    if show_labels and font:
+        axis_y_px = coord_to_pixel(0, 0, rect, x_range, y_range)[1]
+        axis_x_px = coord_to_pixel(0, 0, rect, x_range, y_range)[0]
+        # X tick marks
+        step_x = 2 if (x_max - x_min) > 8 else 1
+        for x in range(x_min, x_max + 1, step_x):
+            if x == 0:
+                continue
+            px, py = coord_to_pixel(x, 0, rect, x_range, y_range)
+            lbl = font.render(str(x), True, TEXT_MUTED)
+            lbl_rect = lbl.get_rect(center=(px, min(rect.bottom - 12, max(rect.top + 12, py + 12))))
+            surface.blit(lbl, lbl_rect)
+
+        # Y tick marks
+        step_y = 2 if (y_max - y_min) > 8 else 1
+        for y in range(y_min, y_max + 1, step_y):
+            if y == 0:
+                continue
+            px, py = coord_to_pixel(0, y, rect, x_range, y_range)
+            lbl = font.render(str(y), True, TEXT_MUTED)
+            lbl_rect = lbl.get_rect(center=(min(rect.right - 12, max(rect.left + 12, px - 12)), py))
+            surface.blit(lbl, lbl_rect)
+
+    # Connected lines
+    if lines:
+        for polyline in lines:
+            if len(polyline) >= 2:
+                pts = [coord_to_pixel(pt[0], pt[1], rect, x_range, y_range) for pt in polyline]
+                pygame.draw.lines(surface, ACCENT_BLUE, False, pts, 3)
+
+    # Helper to draw a single point with optional projection
+    def _draw_pt(x: float, y: float, col: Tuple[int, int, int], r: int, proj: bool):
+        px, py = coord_to_pixel(x, y, rect, x_range, y_range)
+        if proj:
+            # Dashed lines to axes
+            ax_x, _ = coord_to_pixel(x, 0, rect, x_range, y_range)
+            _, ax_y = coord_to_pixel(0, y, rect, x_range, y_range)
+            draw_dashed_line(surface, (100, 160, 210), (px, py), (px, ax_y if 0 in range(x_min, x_max + 1) else py), 4, 3, 2)
+            draw_dashed_line(surface, (100, 160, 210), (px, py), (ax_x, py), 4, 3, 2)
+        # Point circle
+        pygame.draw.circle(surface, (10, 20, 28), (px, py), r + 2)
+        pygame.draw.circle(surface, col, (px, py), r)
+        pygame.draw.circle(surface, (255, 255, 255), (px, py), max(2, r // 3))
+
+    if points:
+        for pt in points:
+            _draw_pt(pt[0], pt[1], point_color, point_radius, show_projections)
+
+    if highlight_point:
+        _draw_pt(highlight_point[0], highlight_point[1], GOLD_STREAK, point_radius + 2, True)
+
+
+def draw_cylinder_3d(
+    surface: pygame.Surface,
+    center: Tuple[int, int],
+    radius_px: int = 70,
+    height_px: int = 120,
+    y_squash: float = 0.35,
+    radius_label: Optional[str] = None,
+    height_label: Optional[str] = None,
+    base_area_label: Optional[str] = None,
+    line_color: Tuple[int, int, int] = ACCENT_BLUE,
+    fill_color: Tuple[int, int, int] = (25, 45, 60),
+    highlight_base: bool = False,
+    font: Optional[pygame.font.Font] = None
+) -> None:
+    """Draws a 3D isometric cylinder matching Duolingo Math geometry lessons."""
+    if font is None:
+        font = get_font(18, bold=True)
+
+    cx, cy = center
+    ry = max(10, int(radius_px * y_squash))
+    top_cy = cy - height_px // 2
+    bot_cy = cy + height_px // 2
+
+    top_rect = pygame.Rect(cx - radius_px, top_cy - ry, radius_px * 2, ry * 2)
+    bot_rect = pygame.Rect(cx - radius_px, bot_cy - ry, radius_px * 2, ry * 2)
+
+    # 1. Body cylinder polygon (sides and bottom fill)
+    body_poly = [
+        (cx - radius_px, top_cy),
+        (cx + radius_px, top_cy),
+        (cx + radius_px, bot_cy),
+        (cx - radius_px, bot_cy)
+    ]
+    pygame.draw.polygon(surface, fill_color, body_poly)
+    pygame.draw.ellipse(surface, fill_color, bot_rect)
+
+    # 2. Bottom ellipse
+    # Back half dashed
+    steps = 30
+    pts_bot_back = []
+    pts_bot_front = []
+    for i in range(steps + 1):
+        a = math.pi + math.pi * (i / steps)  # top half of bottom ellipse (back side)
+        px = cx + radius_px * math.cos(a)
+        py = bot_cy + ry * math.sin(a)
+        pts_bot_back.append((int(px), int(py)))
+
+    for i in range(steps + 1):
+        a = math.pi * (i / steps)  # bottom half of bottom ellipse (front side)
+        px = cx + radius_px * math.cos(a)
+        py = bot_cy + ry * math.sin(a)
+        pts_bot_front.append((int(px), int(py)))
+
+    # Draw dashed back
+    for i in range(0, len(pts_bot_back) - 1, 2):
+        pygame.draw.line(surface, (80, 110, 130), pts_bot_back[i], pts_bot_back[min(i + 1, len(pts_bot_back) - 1)], 2)
+    # Draw solid front
+    if len(pts_bot_front) >= 2:
+        pygame.draw.lines(surface, line_color, False, pts_bot_front, 3)
+
+    # 3. Side vertical edges
+    pygame.draw.line(surface, line_color, (cx - radius_px, top_cy), (cx - radius_px, bot_cy), 3)
+    pygame.draw.line(surface, line_color, (cx + radius_px, top_cy), (cx + radius_px, bot_cy), 3)
+
+    # 4. Top ellipse
+    top_fill = (35, 75, 100) if highlight_base else (28, 55, 75)
+    pygame.draw.ellipse(surface, top_fill, top_rect)
+    pygame.draw.ellipse(surface, line_color, top_rect, 3)
+
+    # Radius indicator on top base
+    if radius_label is not None:
+        # Center dot of top base
+        pygame.draw.circle(surface, (255, 255, 255), (cx, top_cy), 4)
+
+        r_line_end = (cx + radius_px, top_cy)
+        draw_dashed_line(surface, line_color, (cx, top_cy), r_line_end, dash_len=5, space_len=3, width=2)
+        pygame.draw.circle(surface, line_color, r_line_end, 3)
+
+        r_font = get_font(16, bold=True)
+        r_lbl = r_font.render(radius_label, True, TEXT_WHITE)
+        mid_x = cx + radius_px // 2
+        # Position label sitting right above the dashed line, cleanly inside the top ellipse
+        lbl_x = mid_x - r_lbl.get_width() // 2
+        lbl_y = top_cy - r_lbl.get_height() - 3
+        surface.blit(r_lbl, (lbl_x, lbl_y))
+
+    # Base area label inside top base if provided
+    if base_area_label is not None:
+        ba_font = get_font(15, bold=True)
+        ba_lbl = ba_font.render(base_area_label, True, TEXT_WHITE)
+        if radius_label is not None:
+            # Shift to the left side of the ellipse so it doesn't collide with the center dot or radius line
+            ba_x = cx - radius_px // 2 - ba_lbl.get_width() // 2
+            ba_y = top_cy - ba_lbl.get_height() // 2
+        else:
+            ba_x = cx - ba_lbl.get_width() // 2
+            ba_y = top_cy - ba_lbl.get_height() // 2
+        surface.blit(ba_lbl, (ba_x, ba_y))
+
+    # Height indicator on right side
+    if height_label is not None:
+        hx = cx + radius_px + 14
+        h_font = get_font(16, bold=True)
+        h_lbl = h_font.render(height_label, True, line_color)
+        draw_dashed_line(surface, (80, 115, 135), (hx, top_cy), (hx, bot_cy), dash_len=4, space_len=3, width=2)
+        pygame.draw.line(surface, (80, 115, 135), (hx - 4, top_cy), (hx + 4, top_cy), 2)
+        pygame.draw.line(surface, (80, 115, 135), (hx - 4, bot_cy), (hx + 4, bot_cy), 2)
+        surface.blit(h_lbl, (hx + 8, cy - h_lbl.get_height() // 2))
+

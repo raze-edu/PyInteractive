@@ -6,6 +6,7 @@ from ..theme import (
     get_font,
     draw_rounded_rect,
     draw_pie_chart,
+    draw_coordinate_grid,
     CARD_BG,
     CARD_BORDER,
     CARD_HOVER,
@@ -20,12 +21,13 @@ from ..theme import (
 from ..sound import sound_manager
 
 class MatchPairItem:
-    def __init__(self, item_id: int, expr_str: str, total_slices: int = 0, shaded_slices: int = 0, right_text: str = ""):
+    def __init__(self, item_id: int, expr_str: str, total_slices: int = 0, shaded_slices: int = 0, right_text: str = "", coord_point: Optional[Tuple[int, int]] = None):
         self.item_id = item_id
         self.expr_str = expr_str
         self.total_slices = total_slices
         self.shaded_slices = shaded_slices
         self.right_text = right_text
+        self.coord_point = coord_point
 
 class MatchPairsExercise(BaseExercise):
     """Match pairs of mathematical expressions with visual representations or text answers."""
@@ -34,6 +36,7 @@ class MatchPairsExercise(BaseExercise):
         self,
         pairs: Optional[List[Tuple[str, int, int]]] = None,  # [(expr_str, total_slices, shaded_count), ...]
         text_pairs: Optional[List[Tuple[str, str]]] = None,  # [(left_expr, right_val), ...]
+        grid_pairs: Optional[List[Tuple[str, Tuple[int, int]]]] = None,  # [(coord_str, (x, y)), ...]
         title: str = "Match the pairs",
         help_tip: str = "Match each expression on the left with its corresponding value on the right."
     ):
@@ -53,6 +56,9 @@ class MatchPairsExercise(BaseExercise):
         elif text_pairs:
             for i, (l_expr, r_val) in enumerate(text_pairs):
                 self.items.append(MatchPairItem(i, l_expr, right_text=r_val))
+        elif grid_pairs:
+            for i, (l_expr, r_pt) in enumerate(grid_pairs):
+                self.items.append(MatchPairItem(i, l_expr, coord_point=r_pt))
 
         import random
         # Left cards (expression items) and Right cards
@@ -229,8 +235,19 @@ class MatchPairsExercise(BaseExercise):
             draw_rounded_rect(screen, card_rect, bg, radius=16, border_color=border, border_width=2)
             
             item = next(it for it in self.items if it.item_id == item_id)
-            if item.right_text:
-                r_font = get_font(28, bold=True)
+            if item.coord_point is not None:
+                inner_grid = card_rect.inflate(-16, -16)
+                draw_coordinate_grid(
+                    screen,
+                    inner_grid,
+                    x_range=(-5, 5),
+                    y_range=(-5, 5),
+                    highlight_point=item.coord_point,
+                    show_projections=True,
+                    show_labels=False
+                )
+            elif item.right_text:
+                r_font = get_font(24, bold=True)
                 txt_col = GREEN_CORRECT if is_matched else (ACCENT_BLUE if is_selected else TEXT_WHITE)
                 r_surf = r_font.render(item.right_text, True, txt_col)
                 screen.blit(r_surf, r_surf.get_rect(center=card_rect.center))
