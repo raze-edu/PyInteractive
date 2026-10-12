@@ -15,3 +15,8 @@ edu/__pycache__
 edu/components/__pycache__
 edu/mode/__pycache__
 edu/exercises/__pycache__
+build/
+dist/
+*.spec
+edu/__pycache__/__init__.cpython-314.pyc
+edu/components/__pycache__/icon_manager.cpython-314.pyc

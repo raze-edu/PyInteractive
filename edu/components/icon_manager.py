@@ -2,6 +2,7 @@
 Loads, crops, and caches transparent glossy icons from the 4x8 UI icon spreadsheet.
 """
 import os
+import sys
 from typing import Dict, Optional, Tuple, Union
 import pygame
 
@@ -109,8 +110,23 @@ class IconManager:
 
     def __init__(self, asset_path: Optional[str] = None):
         if asset_path is None:
-            base_dir = os.path.dirname(os.path.dirname(__file__))
-            asset_path = os.path.join(base_dir, "assets", "icons.jpg")
+            candidate_dirs = []
+            if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+                candidate_dirs.append(os.path.join(sys._MEIPASS, "edu", "assets"))
+                candidate_dirs.append(os.path.join(sys._MEIPASS, "assets"))
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            candidate_dirs.append(os.path.join(base_dir, "assets"))
+            candidate_dirs.append(os.path.join(os.path.dirname(sys.executable), "edu", "assets"))
+            candidate_dirs.append(os.path.join(os.path.dirname(sys.executable), "assets"))
+
+            asset_path = None
+            for c_dir in candidate_dirs:
+                p = os.path.join(c_dir, "icons.jpg")
+                if os.path.exists(p):
+                    asset_path = p
+                    break
+            if asset_path is None:
+                asset_path = os.path.join(base_dir, "assets", "icons.jpg")
         self.asset_path = asset_path
         self._raw_icons: Dict[Tuple[int, int], pygame.Surface] = {}
         self._scaled_cache: Dict[Tuple[int, int, int, int], pygame.Surface] = {}
