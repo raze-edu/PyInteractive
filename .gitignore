@@ -4,6 +4,8 @@
 /run_fraction_demo.py
 /tests
 edu/example/
+__pycache__/
+edu/example/
 /__pycache__/
 /venv/
 __pycache__/
