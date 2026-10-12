@@ -67,6 +67,7 @@ class CoordinateGridExercise(BaseExercise):
         return len(self.user_points) > 0
 
     def check(self) -> bool:
+        self.has_checked = True
         self.is_solved = self.check_answer()
         return self.is_solved
 
@@ -74,6 +75,14 @@ class CoordinateGridExercise(BaseExercise):
         if self.is_solved:
             return ("Good job!", self.feedback_message)
         return ("Not quite.", self.feedback_message)
+
+    def reset(self) -> None:
+        super().reset()
+        self.has_checked = False
+        if self.mode == "place_point":
+            self.user_points = []
+        else:
+            self.user_points = [(0, 0), (2, 2)]
 
     def draw(self, screen: pygame.Surface, area_rect: pygame.Rect) -> None:
         self.render(screen, area_rect)
@@ -84,6 +93,7 @@ class CoordinateGridExercise(BaseExercise):
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
+            self.has_checked = False
 
             # Check buttons in create_graph mode
             if self.mode == "create_graph":
@@ -125,6 +135,7 @@ class CoordinateGridExercise(BaseExercise):
                         self.dragging_idx = len(self.user_points) - 1
 
         elif event.type == pygame.MOUSEMOTION and self.dragging_idx is not None:
+            self.has_checked = False
             mx, my = event.pos
             gx, gy = pixel_to_coord(mx, my, self.grid_rect, self.x_range, self.y_range)
             rx = max(self.x_range[0], min(self.x_range[1], int(round(gx))))
@@ -233,12 +244,14 @@ class CoordinateGridExercise(BaseExercise):
                 show_labels=True
             )
 
-            # Display currently selected coordinate pill below grid
-            if self.user_points:
+            # Display currently selected coordinate pill below grid only AFTER checking
+            if self.user_points and self.has_checked:
                 cur_x, cur_y = self.user_points[0]
                 pill_rect = pygame.Rect(center_x - 70, 520, 140, 36)
-                draw_rounded_rect(surface, pill_rect, CARD_SELECTED_BG, radius=18, border_color=CARD_SELECTED_BORDER, border_width=2)
-                cur_lbl = get_font(18, bold=True).render(f"({cur_x}, {cur_y})", True, ACCENT_BLUE_LIGHT)
+                border_col = GREEN_CORRECT if self.is_solved else RED_INCORRECT
+                text_col = GREEN_CORRECT if self.is_solved else RED_INCORRECT
+                draw_rounded_rect(surface, pill_rect, CARD_SELECTED_BG, radius=18, border_color=border_col, border_width=2)
+                cur_lbl = get_font(18, bold=True).render(f"({cur_x}, {cur_y})", True, text_col)
                 surface.blit(cur_lbl, (pill_rect.centerx - cur_lbl.get_width() // 2, pill_rect.centery - cur_lbl.get_height() // 2))
 
     def _render_table(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
@@ -264,8 +277,8 @@ class CoordinateGridExercise(BaseExercise):
                 break
             pygame.draw.line(surface, CARD_BORDER, (rect.left, ry + row_h), (rect.right, ry + row_h), 1)
 
-            # Check if this point is currently plotted by user
-            matched = (px, py) in self.user_points
+            # Check if this point is currently plotted by user (only highlight after checking)
+            matched = ((px, py) in self.user_points) if self.has_checked else False
             color = GREEN_CORRECT if matched else TEXT_WHITE
 
             sx = font_row.render(str(px), True, color)

@@ -10,7 +10,7 @@ from edu.theme import (
     CARD_BG, CARD_BORDER, CARD_SELECTED_BG, CARD_SELECTED_BORDER,
     ACCENT_BLUE, ACCENT_BLUE_LIGHT, GREEN_CORRECT, RED_INCORRECT, GOLD_STREAK,
     TEXT_WHITE, TEXT_MUTED, get_font, draw_rounded_rect,
-    draw_cylinder_3d
+    draw_cylinder_3d, render_math, draw_math
 )
 
 
@@ -90,8 +90,13 @@ class Cylinder3DExercise(BaseExercise):
         return True
 
     def check(self) -> bool:
+        self.has_checked = True
         self.is_solved = self.check_answer()
         return self.is_solved
+
+    def reset(self) -> None:
+        super().reset()
+        self.has_checked = False
 
     def get_feedback(self) -> Tuple[str, str]:
         if self.is_solved:
@@ -110,10 +115,12 @@ class Cylinder3DExercise(BaseExercise):
             # Expand hit area for thumb and track
             hit_track = self.slider_track_rect.inflate(30, 30)
             if hit_track.collidepoint(mx, my):
+                self.has_checked = False
                 self.dragging_slider = True
                 self._update_slider_from_pos(mx)
 
         elif event.type == pygame.MOUSEMOTION and self.dragging_slider:
+            self.has_checked = False
             mx, _ = event.pos
             self._update_slider_from_pos(mx)
 
@@ -186,11 +193,15 @@ class Cylinder3DExercise(BaseExercise):
         # Dynamic Equation banner
         eq_y = 390
         if self.mode == "base_area":
-            eq_text = f"base area = π · ({self.slider_val})² = {self.computed_base_area}π"
+            eq_text = f"base area = π · ({self.slider_val})²"
+            if self.has_checked:
+                eq_text += f" = {self.computed_base_area}π"
         else:
-            eq_text = f"volume = π({self.current_radius})² · ({self.current_height}) = {self.computed_volume}π"
+            eq_text = f"volume = π({self.current_radius})² · ({self.current_height})"
+            if self.has_checked:
+                eq_text += f" = {self.computed_volume}π"
 
-        eq_surf = font_eq.render(eq_text, True, ACCENT_BLUE_LIGHT)
+        eq_surf = render_math(eq_text, font_size=20, color=ACCENT_BLUE_LIGHT, bold=True)
         eq_bg = pygame.Rect(center_x - eq_surf.get_width() // 2 - 16, eq_y - 8, eq_surf.get_width() + 32, 44)
         draw_rounded_rect(surface, eq_bg, CARD_BG, radius=8, border_color=CARD_BORDER, border_width=1)
         surface.blit(eq_surf, (center_x - eq_surf.get_width() // 2, eq_y))

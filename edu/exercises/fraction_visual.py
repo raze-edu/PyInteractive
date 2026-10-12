@@ -11,7 +11,9 @@ from ..theme import (
     CARD_BG,
     CARD_BORDER,
     TEXT_WHITE,
-    TEXT_MUTED
+    TEXT_MUTED,
+    draw_math,
+    render_math
 )
 from ..sound import sound_manager
 
@@ -138,16 +140,10 @@ class FractionVisualExercise(BaseExercise):
 
         if self.mode == "interactive_slices":
             # Display target fraction at top
-            frac_font = get_font(26, bold=True)
-            f_parts = self.prompt_fraction.split("/")
             fy = area_rect.y + 115
+            f_parts = self.prompt_fraction.split("/")
             if len(f_parts) == 2:
-                num_surf = frac_font.render(f_parts[0], True, TEXT_WHITE)
-                den_surf = frac_font.render(f_parts[1], True, TEXT_WHITE)
-                fw = max(num_surf.get_width(), den_surf.get_width()) + 8
-                screen.blit(num_surf, num_surf.get_rect(center=(area_rect.centerx, fy - 14)))
-                pygame.draw.line(screen, TEXT_WHITE, (area_rect.centerx - fw // 2, fy), (area_rect.centerx + fw // 2, fy), 2)
-                screen.blit(den_surf, den_surf.get_rect(center=(area_rect.centerx, fy + 14)))
+                draw_math(screen, f"\\frac{{{f_parts[0]}}}{{{f_parts[1]}}}", (area_rect.centerx, fy), font_size=28, color=TEXT_WHITE, bold=True, align="center")
 
             # Interactive Circle
             self.circle_center = (area_rect.centerx, area_rect.y + 260)

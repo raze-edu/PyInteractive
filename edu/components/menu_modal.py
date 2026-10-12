@@ -17,6 +17,7 @@ from ..theme import (
     TEXT_MUTED
 )
 from ..sound import sound_manager
+from .icon_manager import icon_manager
 
 class GeneratorMenu:
     """Full-screen or overlay menu to customize operation, difficulty, and generate new lessons."""
@@ -156,7 +157,14 @@ class GeneratorMenu:
         # Title
         t_font = get_font(30, bold=True)
         t_surf = t_font.render("Math Exercise Generator", True, TEXT_WHITE)
-        screen.blit(t_surf, t_surf.get_rect(center=(mx + mw // 2, my + 38)))
+        title_icon = icon_manager.get_icon("curriculum", (36, 36))
+        if title_icon:
+            total_w = t_surf.get_width() + 48
+            start_x = mx + (mw - total_w) // 2
+            screen.blit(title_icon, (start_x, my + 38 - title_icon.get_height() // 2))
+            screen.blit(t_surf, (start_x + 48, my + 38 - t_surf.get_height() // 2))
+        else:
+            screen.blit(t_surf, t_surf.get_rect(center=(mx + mw // 2, my + 38)))
 
         # Close X
         self.close_rect = pygame.Rect(mx + mw - 48, my + 20, 32, 32)
@@ -199,17 +207,21 @@ class GeneratorMenu:
 
             draw_rounded_rect(screen, card_rect, bg, radius=12, border_color=border, border_width=border_w)
 
-            # Icon badge
-            badge_r = 16
-            bx = card_rect.x + 24
+            # Icon badge (from sprite sheet or fallback)
+            op_icon = icon_manager.get_icon(op_key, (42, 42))
+            bx = card_rect.x + 30
             by = card_rect.centery
-            pygame.draw.circle(screen, op_color, (bx, by), badge_r)
-            sym_surf = icon_font.render(op_symbol, True, (19, 31, 36))
-            screen.blit(sym_surf, sym_surf.get_rect(center=(bx, by)))
+            if op_icon:
+                screen.blit(op_icon, op_icon.get_rect(center=(bx, by)))
+            else:
+                badge_r = 16
+                pygame.draw.circle(screen, op_color, (bx, by), badge_r)
+                sym_surf = icon_font.render(op_symbol, True, (19, 31, 36))
+                screen.blit(sym_surf, sym_surf.get_rect(center=(bx, by)))
 
             # Name label
             lbl_surf = op_label_font.render(op_name, True, TEXT_WHITE)
-            screen.blit(lbl_surf, (bx + 24, by - lbl_surf.get_height() // 2))
+            screen.blit(lbl_surf, (card_rect.x + 60, by - lbl_surf.get_height() // 2))
 
         cur_y += rows * (ch + 8) + 16
 
@@ -234,10 +246,17 @@ class GeneratorMenu:
             border = d_color if is_sel else ((53, 75, 87) if is_hov else CARD_BORDER)
             draw_rounded_rect(screen, drect, bg, radius=12, border_color=border, border_width=3 if is_sel else 2)
 
-            # Dot indicator
-            pygame.draw.circle(screen, d_color, (drect.x + 24, drect.centery), 6)
+            # Difficulty Icon (Baby, Nerd glasses, Flaming skull)
+            diff_icon = icon_manager.get_icon(d_key, (36, 36))
+            ix = drect.x + 30
+            iy = drect.centery
+            if diff_icon:
+                screen.blit(diff_icon, diff_icon.get_rect(center=(ix, iy)))
+            else:
+                pygame.draw.circle(screen, d_color, (ix, iy), 6)
+
             txt_surf = diff_font.render(d_name, True, TEXT_WHITE)
-            screen.blit(txt_surf, txt_surf.get_rect(center=(drect.centerx + 8, drect.centery)))
+            screen.blit(txt_surf, txt_surf.get_rect(center=(drect.centerx + 14, drect.centery)))
 
         cur_y += dh + 24
 

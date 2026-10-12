@@ -17,6 +17,7 @@ class BaseExercise:
         self.help_tip = help_tip
         self.help_faqs = help_faqs or []
         self.is_solved = False
+        self.has_checked = False
 
     def is_ready_to_check(self) -> bool:
         """Returns True if the user has provided an answer and is ready to check."""
@@ -24,6 +25,7 @@ class BaseExercise:
 
     def check(self) -> bool:
         """Evaluates whether the user's answer is correct."""
+        self.has_checked = True
         return False
 
     def get_feedback(self) -> Tuple[str, str]:
@@ -45,3 +47,4 @@ class BaseExercise:
     def reset(self) -> None:
         """Resets the exercise state for retry."""
         self.is_solved = False
+        self.has_checked = False

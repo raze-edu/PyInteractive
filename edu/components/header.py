@@ -12,8 +12,11 @@ from ..theme import (
     TEXT_MUTED
 )
 
+from ..sound import sound_manager
+from .icon_manager import icon_manager
+
 class Header:
-    """Header bar rendering the close button, progress bar, streak count, and hearts."""
+    """Header bar rendering the close button, progress bar, streak count, and menu button."""
     
     def __init__(self):
         self.progress: float = 0.0  # 0.0 to 1.0
@@ -22,6 +25,8 @@ class Header:
         self.hearts: str = "∞"
         self.close_rect = pygame.Rect(0, 0, 40, 40)
         self.close_hovered: bool = False
+        self.menu_rect = pygame.Rect(0, 0, 40, 40)
+        self.menu_hovered: bool = False
         
     def set_progress(self, current: int, total: int, streak: int = 0) -> None:
         self.target_progress = max(0.0, min(1.0, current / max(1, total)))
@@ -34,16 +39,19 @@ class Header:
         self.progress += diff * min(1.0, dt * lerp_speed)
 
     def handle_event(self, event: pygame.event.Event) -> Optional[str]:
-        """Returns 'close' if the close button was clicked."""
+        """Returns 'close' or 'menu' if header buttons are clicked."""
         if event.type == pygame.MOUSEMOTION:
             self.close_hovered = self.close_rect.collidepoint(event.pos)
+            self.menu_hovered = self.menu_rect.collidepoint(event.pos)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.close_rect.collidepoint(event.pos):
                 return "close"
+            if self.menu_rect.collidepoint(event.pos):
+                return "menu"
         return None
 
     def draw(self, screen: pygame.Surface, rect: pygame.Rect) -> None:
-        """Renders header with close button and centered progress bar."""
+        """Renders header with close button, progress bar, and menu icon."""
         # 1. Close button on left
         self.close_rect = pygame.Rect(rect.x + 24, rect.y + (rect.height - 36) // 2, 36, 36)
         close_col = (180, 200, 210) if self.close_hovered else (100, 120, 130)
@@ -51,6 +59,19 @@ class Header:
         d = 9
         pygame.draw.line(screen, close_col, (cx - d, cy - d), (cx + d, cy + d), 3)
         pygame.draw.line(screen, close_col, (cx - d, cy + d), (cx + d, cy - d), 3)
+
+        # 2. Menu / Curriculum icon button on right
+        self.menu_rect = pygame.Rect(rect.right - 60, rect.y + (rect.height - 36) // 2, 36, 36)
+        menu_bg = (32, 47, 54) if self.menu_hovered else (24, 39, 46)
+        draw_rounded_rect(screen, self.menu_rect, menu_bg, radius=10, border_color=(43, 61, 71), border_width=2)
+        grad_icon = icon_manager.get_icon("curriculum", (28, 28))
+        if grad_icon:
+            screen.blit(grad_icon, grad_icon.get_rect(center=self.menu_rect.center))
+        else:
+            # Fallback 3 bars
+            mcx, mcy = self.menu_rect.center
+            for off_y in (-6, 0, 6):
+                pygame.draw.line(screen, (119, 142, 155), (mcx - 8, mcy + off_y), (mcx + 8, mcy + off_y), 2)
 
         # 2. Clean Centered Progress Bar
         bar_margin = 84

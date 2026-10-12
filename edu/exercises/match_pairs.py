@@ -16,7 +16,9 @@ from ..theme import (
     RED_INCORRECT,
     ACCENT_BLUE,
     TEXT_WHITE,
-    TEXT_MUTED
+    TEXT_MUTED,
+    draw_math,
+    render_math
 )
 from ..sound import sound_manager
 
@@ -263,45 +265,14 @@ class MatchPairsExercise(BaseExercise):
                 )
 
     def _draw_fraction_mult(self, screen: pygame.Surface, center: Tuple[int, int], expr: str, text_color: Tuple[int, int, int]) -> None:
-        """Renders stacked fractions with multiplication dot: e.g. 2/3 · 2/2."""
-        parts = [p.strip() for p in expr.split("·") if p.strip()]
-        if len(parts) == 1 and "*" in expr:
-            parts = [p.strip() for p in expr.split("*") if p.strip()]
-
-        f_font = get_font(20, bold=True)
-        dot_font = get_font(28, bold=True)
-        
-        # Calculate width
-        cx, cy = center
-        if len(parts) == 2:
-            frac1 = parts[0].split("/")
-            frac2 = parts[1].split("/")
-            if len(frac1) == 2 and len(frac2) == 2:
-                # Draw frac 1
-                f1_x = cx - 36
-                self._draw_single_fraction(screen, f1_x, cy, frac1[0], frac1[1], text_color, f_font)
-                
-                # Dot
-                dot_surf = dot_font.render("·", True, text_color)
-                screen.blit(dot_surf, dot_surf.get_rect(center=(cx, cy - 2)))
-                
-                # Draw frac 2
-                f2_x = cx + 36
-                self._draw_single_fraction(screen, f2_x, cy, frac2[0], frac2[1], text_color, f_font)
-                return
-
-        # Fallback single line
-        fallback_surf = f_font.render(expr, True, text_color)
-        screen.blit(fallback_surf, fallback_surf.get_rect(center=center))
-
-    def _draw_single_fraction(
-        self, surface: pygame.Surface, x: int, y: int, num: str, den: str,
-        color: Tuple[int, int, int], font: pygame.font.Font
-    ) -> None:
-        num_surf = font.render(num, True, color)
-        den_surf = font.render(den, True, color)
-        w = max(num_surf.get_width(), den_surf.get_width()) + 8
-        
-        surface.blit(num_surf, num_surf.get_rect(center=(x, y - 14)))
-        pygame.draw.line(surface, color, (x - w // 2, y), (x + w // 2, y), 2)
-        surface.blit(den_surf, den_surf.get_rect(center=(x, y + 14)))
+        """Renders stacked fractions or math expressions with multiplication dot: e.g. 2/3 · 2/2."""
+        formatted = expr.replace("·", r" \cdot ").replace("*", r" \cdot ")
+        tokens = formatted.split()
+        converted_tokens = []
+        for t in tokens:
+            if "/" in t and not t.startswith(r"\frac"):
+                p = t.split("/", 1)
+                converted_tokens.append(f"\\frac{{{p[0]}}}{{{p[1]}}}")
+            else:
+                converted_tokens.append(t)
+        draw_math(screen, " ".join(converted_tokens), center, font_size=20, color=text_color, bold=True, align="center")

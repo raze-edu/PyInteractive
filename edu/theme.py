@@ -440,6 +440,16 @@ def draw_coordinate_grid(
         _draw_pt(highlight_point[0], highlight_point[1], GOLD_STREAK, point_radius + 2, True)
 
 
+# Re-export math rendering engine
+from .math_renderer import (
+    MathRenderer,
+    math_renderer,
+    render_math,
+    draw_math,
+    get_math_size,
+)
+
+
 def draw_cylinder_3d(
     surface: pygame.Surface,
     center: Tuple[int, int],
@@ -518,8 +528,7 @@ def draw_cylinder_3d(
         draw_dashed_line(surface, line_color, (cx, top_cy), r_line_end, dash_len=5, space_len=3, width=2)
         pygame.draw.circle(surface, line_color, r_line_end, 3)
 
-        r_font = get_font(16, bold=True)
-        r_lbl = r_font.render(radius_label, True, TEXT_WHITE)
+        r_lbl = render_math(radius_label, font_size=16, color=TEXT_WHITE, bold=True)
         mid_x = cx + radius_px // 2
         # Position label sitting right above the dashed line, cleanly inside the top ellipse
         lbl_x = mid_x - r_lbl.get_width() // 2
@@ -528,8 +537,7 @@ def draw_cylinder_3d(
 
     # Base area label inside top base if provided
     if base_area_label is not None:
-        ba_font = get_font(15, bold=True)
-        ba_lbl = ba_font.render(base_area_label, True, TEXT_WHITE)
+        ba_lbl = render_math(base_area_label, font_size=15, color=TEXT_WHITE, bold=True)
         if radius_label is not None:
             # Shift to the left side of the ellipse so it doesn't collide with the center dot or radius line
             ba_x = cx - radius_px // 2 - ba_lbl.get_width() // 2
@@ -542,8 +550,7 @@ def draw_cylinder_3d(
     # Height indicator on right side
     if height_label is not None:
         hx = cx + radius_px + 14
-        h_font = get_font(16, bold=True)
-        h_lbl = h_font.render(height_label, True, line_color)
+        h_lbl = render_math(height_label, font_size=16, color=line_color, bold=True)
         draw_dashed_line(surface, (80, 115, 135), (hx, top_cy), (hx, bot_cy), dash_len=4, space_len=3, width=2)
         pygame.draw.line(surface, (80, 115, 135), (hx - 4, top_cy), (hx + 4, top_cy), 2)
         pygame.draw.line(surface, (80, 115, 135), (hx - 4, bot_cy), (hx + 4, bot_cy), 2)

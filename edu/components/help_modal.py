@@ -12,6 +12,7 @@ from ..theme import (
     TEXT_MUTED
 )
 from ..sound import sound_manager
+from .icon_manager import icon_manager
 
 class HelpModal:
     """Friendly character tip modal dialog matching Duolingo style."""
@@ -75,7 +76,12 @@ class HelpModal:
         return True
 
     def _draw_character(self, surface: pygame.Surface, x: int, y: int, size: int = 60) -> None:
-        """Draws a cute stylized Duolingo avatar head with crown/hijab."""
+        """Draws a cute stylized Duolingo avatar head."""
+        avatar = icon_manager.get_icon("nerd", (size, size))
+        if avatar:
+            surface.blit(avatar, (x, y))
+            return
+
         cx = x + size // 2
         cy = y + size // 2
         

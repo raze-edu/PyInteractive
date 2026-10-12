@@ -69,6 +69,34 @@ class MathGenerator:
             return MathGenerator._gen_addition(difficulty, exercise_type)
 
     @staticmethod
+    def _distinct_choices(correct_ans: str, candidate_distractors: List[str], count: int = 3) -> Tuple[List[str], int]:
+        """Ensures all choices are strictly unique and returns (shuffled_choices, correct_index)."""
+        choices = [correct_ans]
+        seen = {correct_ans}
+        for d in candidate_distractors:
+            d_str = str(d).strip()
+            if d_str and d_str not in seen:
+                seen.add(d_str)
+                choices.append(d_str)
+                if len(choices) == count:
+                    break
+        # Fallback if candidate pool did not produce enough unique choices
+        counter = 1
+        while len(choices) < count:
+            try:
+                num = int(correct_ans)
+                fallback = str(num + counter)
+            except ValueError:
+                fallback = f"{correct_ans} + {counter}"
+            if fallback not in seen:
+                seen.add(fallback)
+                choices.append(fallback)
+            counter += 1
+
+        random.shuffle(choices)
+        return choices, choices.index(correct_ans)
+
+    @staticmethod
     def _make_ticks(target_val: int, count: int = 7) -> List[int]:
         """Generates a clean list of sorted ticks containing target_val."""
         candidates = [1, 2, 5, 10, 15, 20, 25, 50, 100]
@@ -154,13 +182,15 @@ class MathGenerator:
 
         elif exercise_type == "multiple_choice":
             # Missing addend: a + [ ] = total_2
-            choices = [str(b), str(b + 10), str(max(1, b - 10))]
-            random.shuffle(choices)
+            choices, c_idx = MathGenerator._distinct_choices(
+                str(b),
+                [str(b + 10), str(max(1, b - 10) if b != 10 else b + 5), str(b + 1), str(max(1, b - 1)), str(b + 2)]
+            )
             return MultipleChoiceExercise(
                 title="Fill in the blank",
                 question_text=f"{a} + [ ] = {total_2}",
                 choices=choices,
-                correct_choice_index=choices.index(str(b)),
+                correct_choice_index=c_idx,
                 help_tip="Find the missing number that adds with the first number to make the target sum."
             )
 
@@ -235,13 +265,15 @@ class MathGenerator:
             )
 
         elif exercise_type == "multiple_choice":
-            choices = [str(result_2), str(result_2 + 10), str(max(0, result_2 - 10))]
-            random.shuffle(choices)
+            choices, c_idx = MathGenerator._distinct_choices(
+                str(result_2),
+                [str(result_2 + 10), str(max(0, result_2 - 10) if result_2 != 10 else result_2 + 5), str(result_2 + 2), str(max(0, result_2 - 2))]
+            )
             return MultipleChoiceExercise(
                 title="Fill in the blank",
                 question_text=f"{start} - {sub1} = [ ]",
                 choices=choices,
-                correct_choice_index=choices.index(str(result_2)),
+                correct_choice_index=c_idx,
                 help_tip="Subtract the two numbers to find the correct difference."
             )
 
@@ -313,23 +345,27 @@ class MathGenerator:
                 k = random.randint(4, 9)
                 c = random.randint(3, 8)
                 ans = str(k * c)
-                choices = [ans, str(k + c), str(k * c + 5)]
-                random.shuffle(choices)
+                choices, c_idx = MathGenerator._distinct_choices(
+                    ans,
+                    [str(k + c), str(k * c + 5), str(k * (c + 1)), str(k * c - 3)]
+                )
                 return MultipleChoiceExercise(
                     title="Fill in the blank",
                     question_text=f"{k}(x + {c}) = {k}x + [ ]",
                     choices=choices,
-                    correct_choice_index=choices.index(ans),
+                    correct_choice_index=c_idx,
                     help_tip="Use the distributive law: multiply the factor outside by each term inside: a(x + b) = ax + ab."
                 )
             else:
-                choices = [str(prod), str(prod + m1), str(max(1, prod - m1))]
-                random.shuffle(choices)
+                choices, c_idx = MathGenerator._distinct_choices(
+                    str(m2),
+                    [str(m2 + 2), str(max(1, m2 - 2) if m2 > 2 else m2 + 4), str(m2 + 1), str(max(1, m2 - 1))]
+                )
                 return MultipleChoiceExercise(
                     title="Fill in the blank",
                     question_text=f"{m1} × [ ] = {prod}",
-                    choices=[str(m2), str(m2 + 2), str(max(1, m2 - 2))],
-                    correct_choice_index=0,
+                    choices=choices,
+                    correct_choice_index=c_idx,
                     help_tip="Find the factor that multiplies with the first number to give the product."
                 )
 
@@ -396,13 +432,15 @@ class MathGenerator:
             )
 
         elif exercise_type == "multiple_choice":
-            choices = [str(quotient), str(quotient + 2), str(max(1, quotient - 2))]
-            random.shuffle(choices)
+            choices, c_idx = MathGenerator._distinct_choices(
+                str(divisor),
+                [str(divisor + 2), str(max(1, divisor - 2) if divisor > 2 else divisor + 4), str(divisor + 1), str(quotient)]
+            )
             return MultipleChoiceExercise(
                 title="Fill in the blank",
                 question_text=f"{dividend} ÷ [ ] = {quotient}",
-                choices=[str(divisor), str(divisor + 2), str(max(1, divisor - 2))],
-                correct_choice_index=0,
+                choices=choices,
+                correct_choice_index=c_idx,
                 help_tip="Find the number that divides into the dividend to yield the quotient."
             )
 
@@ -488,13 +526,23 @@ class MathGenerator:
             )
 
         elif exercise_type == "multiple_choice":
-            choices = [f"({x}, {y})", f"({-x}, {y})", f"({x}, {-y})"]
-            choice_pts = {0: (x, y), 1: (-x, y), 2: (x, -y)}
+            cx = x if x != 0 else random.choice([-3, -2, 2, 3])
+            cy = y if y != 0 else random.choice([-3, -2, 2, 3])
+            correct_ans = f"({cx}, {cy})"
+            candidates = [f"({-cx}, {cy})", f"({cx}, {-cy})", f"({-cx}, {-cy})", f"({cy}, {cx})"]
+            choices, c_idx = MathGenerator._distinct_choices(correct_ans, candidates)
+            choice_pts = {}
+            for idx, c in enumerate(choices):
+                try:
+                    parts = c.strip("()").split(",")
+                    choice_pts[idx] = (int(parts[0].strip()), int(parts[1].strip()))
+                except Exception:
+                    choice_pts[idx] = (cx, cy)
             return MultipleChoiceExercise(
                 title="Select the match",
-                question_text=f"Which graph represents ({x}, {y})?",
+                question_text=f"Which graph represents ({cx}, {cy})?",
                 choices=choices,
-                correct_choice_index=0,
+                correct_choice_index=c_idx,
                 diagram_type="visual_grids",
                 diagram_data={"choice_points": choice_pts, "x_range": (-5, 5), "y_range": (-5, 5)},
                 help_tip="Look for the point plotted at the given x and y values."
@@ -515,6 +563,7 @@ class MathGenerator:
     # --------------------------------------------------------------------------
     # LOGARITHMS & EXPONENTIAL FUNCTIONS
     # --------------------------------------------------------------------------
+
     @staticmethod
     def _gen_logarithms(difficulty: str, exercise_type: str) -> BaseExercise:
         if difficulty == "easy":
@@ -530,28 +579,43 @@ class MathGenerator:
         val = b ** exp
 
         if exercise_type == "concept":
-            speech = f"Logarithms invert exponentials. Since {b}^{exp} = {val}, log_{b}({val}) is _____."
+            speech = f"Logarithms invert exponentials. Since {b}^{{{exp}}} = {val}, \\log_{{{b}}}({val}) is _____."
+            choices, c_idx = MathGenerator._distinct_choices(
+                str(exp),
+                [str(b), str(val), str(exp + 1), str(b * 2), "0", str(max(1, exp - 1))]
+            )
             return MultipleChoiceExercise(
                 title="Logarithm concept",
                 question_text="Fill in the blank [ ]",
                 character_speech=speech,
-                choices=[str(exp), str(b), str(val)],
-                correct_choice_index=0,
+                choices=choices,
+                correct_choice_index=c_idx,
                 help_tip="A logarithm answers the question: to what power must the base be raised to produce the argument?"
             )
 
         elif exercise_type == "pattern_table":
             rows = [
-                (f"{b}^1 = {b}", f"log_{b}({b}) = 1"),
-                (f"{b}^2 = {b**2}", f"log_{b}({b**2}) = 2"),
-                (f"{b}^{exp} = {val}", "?")
+                (f"{b}^1 = {b}", f"\\log_{{{b}}}({b}) = 1"),
+                (f"{b}^2 = {b**2}", f"\\log_{{{b}}}({b**2}) = 2"),
+                (f"{b}^{{{exp}}} = {val}", "?")
             ]
-            choices = [f"log_{b}({val}) = {exp}", f"log_{val}({b}) = {exp}", f"log_{b}({exp}) = {val}"]
+            choices, c_idx = MathGenerator._distinct_choices(
+                f"\\log_{{{b}}}({val}) = {exp}",
+                [
+                    f"\\log_{{{val}}}({b}) = {exp}",
+                    f"\\log_{{{b}}}({exp}) = {val}",
+                    f"\\log_{{{exp}}}({val}) = {b}",
+                    f"\\log_{{{b}}}({val}) = 0",
+                    f"\\log_{{{b}}}({val * 2}) = {exp}",
+                    f"\\log_{{{b + 1}}}({val}) = {exp}",
+                    f"\\log_{{{b}}}(1) = {exp}",
+                ]
+            )
             return MultipleChoiceExercise(
                 title="Complete the pattern",
                 question_text="Select the missing logarithmic equation [ ]",
                 choices=choices,
-                correct_choice_index=0,
+                correct_choice_index=c_idx,
                 diagram_type="pattern_table",
                 diagram_data={"headers": ["Exponential", "Logarithmic"], "rows": rows},
                 help_tip="Follow the row-by-row pattern connecting exponential equations to logarithmic form."
@@ -561,40 +625,47 @@ class MathGenerator:
             target_part = random.choice(["base", "argument", "exponent"])
             if target_part == "base":
                 correct_ans = str(b)
-                distractors = [str(val), str(exp)]
+                distractors = [str(val), str(exp), str(b + 1), str(b * 2), "10", "1"]
             elif target_part == "argument":
                 correct_ans = str(val)
-                distractors = [str(b), str(exp)]
+                distractors = [str(b), str(exp), str(val + 1), str(val * 2), "1", "0"]
             else:
                 correct_ans = str(exp)
-                distractors = [str(b), str(val)]
+                distractors = [str(b), str(val), str(exp + 1), str(exp + 2), "0", "1"]
 
-            choices = [correct_ans] + distractors
+            choices, c_idx = MathGenerator._distinct_choices(correct_ans, distractors)
             return MultipleChoiceExercise(
                 title="Select the part",
-                question_text=f"In the equation log_{b}({val}) = {exp}, select the {target_part}.",
+                question_text=f"In the equation \\log_{{{b}}}({val}) = {exp}, select the {target_part}.",
                 choices=choices,
-                correct_choice_index=0,
+                correct_choice_index=c_idx,
                 help_tip=f"The base is {b}, the argument inside is {val}, and the result is the exponent {exp}."
             )
 
         elif exercise_type == "multiple_choice":
-            choices = [
-                f"log_{b}({val}) = {exp}",
-                f"log_{val}({b}) = {exp}",
-                f"log_{b}({exp}) = {val}"
-            ]
+            choices, c_idx = MathGenerator._distinct_choices(
+                f"\\log_{{{b}}}({val}) = {exp}",
+                [
+                    f"\\log_{{{val}}}({b}) = {exp}",
+                    f"\\log_{{{b}}}({exp}) = {val}",
+                    f"\\log_{{{exp}}}({val}) = {b}",
+                    f"\\log_{{{b}}}({val}) = 0",
+                    f"\\log_{{{b}}}({val * 2}) = {exp}",
+                    f"\\log_{{{b + 1}}}({val}) = {exp}",
+                    f"\\log_{{{b}}}(1) = {exp}",
+                ]
+            )
             return MultipleChoiceExercise(
                 title="Select the match",
-                question_text=f"Which logarithm matches {b}^{exp} = {val}?",
+                question_text=f"Which logarithm matches {b}^{{{exp}}} = {val}?",
                 choices=choices,
-                correct_choice_index=0,
-                help_tip=f"b^y = x translates directly to log_b(x) = y."
+                correct_choice_index=c_idx,
+                help_tip=f"b^y = x translates directly to \\log_b(x) = y."
             )
 
         elif exercise_type == "type_answer":
             return TypeAnswerExercise(
-                equation_format=f"log_{b}({val}) = [ ]",
+                equation_format=f"\\log_{{{b}}}({val}) = [ ]",
                 correct_answer=str(exp),
                 title="Evaluate logarithm",
                 help_tip=f"Determine the power needed on base {b} to equal {val}."
@@ -604,7 +675,7 @@ class MathGenerator:
             pairs = []
             test_bases = [(2, 3), (3, 2), (5, 2)]
             for tb, te in test_bases:
-                pairs.append((f"log_{tb}({tb**te})", str(te)))
+                pairs.append((f"\\log_{{{tb}}}({tb**te})", str(te)))
             return MatchPairsExercise(
                 text_pairs=pairs,
                 title="Match the pairs",
@@ -646,47 +717,58 @@ class MathGenerator:
             )
 
         elif exercise_type == "cross_section":
+            choices = ["circle", "triangle", "rectangle"]
+            random.shuffle(choices)
             return MultipleChoiceExercise(
                 title="Cross section",
                 question_text="Select the cross section parallel to the base of the cylinder.",
-                choices=["circle", "triangle", "rectangle"],
-                correct_choice_index=0,
+                choices=choices,
+                correct_choice_index=choices.index("circle"),
                 diagram_type="cylinder_3d",
                 diagram_data={"r": r, "h": h, "show_r": False, "show_h": False, "highlight_base": True},
                 help_tip="A plane slicing horizontally parallel to the circular base produces a circle."
             )
 
         elif exercise_type == "radius_choice":
-            choices = [str(r), str(h), str(r + 2)]
+            choices, c_idx = MathGenerator._distinct_choices(
+                str(r),
+                [str(h), str(r + 2), str(max(1, r - 1)), str(2 * r), str(h + 2)]
+            )
             return MultipleChoiceExercise(
                 title="Cylinder dimensions",
                 question_text="Select the length of the radius of the base.",
                 choices=choices,
-                correct_choice_index=0,
+                correct_choice_index=c_idx,
                 diagram_type="cylinder_3d",
                 diagram_data={"r": r, "h": h, "show_r": True, "show_h": True},
                 help_tip="The radius is the distance from the center of the base circle to its edge."
             )
 
         elif exercise_type == "base_area_choice":
-            choices = [f"{base_area}π", f"{2 * r}π", f"{r * h}π"]
+            choices, c_idx = MathGenerator._distinct_choices(
+                f"{base_area}π",
+                [f"{2 * r}π", f"{r * h}π", f"{base_area + 2}π", f"{max(1, base_area - 2)}π", f"{r}π"]
+            )
             return MultipleChoiceExercise(
                 title="Base area",
                 question_text="Select the area of the base of the cylinder.",
                 choices=choices,
-                correct_choice_index=0,
+                correct_choice_index=c_idx,
                 diagram_type="cylinder_3d",
                 diagram_data={"r": r, "h": h, "show_r": True, "show_h": False, "highlight_base": True},
                 help_tip="Base area formula is A = π · r²."
             )
 
         else:  # volume_choice
-            choices = [f"{volume}π", f"{base_area + h}π", f"{r * h}π"]
+            choices, c_idx = MathGenerator._distinct_choices(
+                f"{volume}π",
+                [f"{base_area + h}π", f"{r * h}π", f"{volume + 4}π", f"{max(1, volume - 4)}π", f"{2 * base_area * h}π"]
+            )
             return MultipleChoiceExercise(
                 title="Cylinder volume",
                 question_text="Select the volume of the cylinder.",
                 choices=choices,
-                correct_choice_index=0,
+                correct_choice_index=c_idx,
                 diagram_type="cylinder_3d",
                 diagram_data={
                     "r": r,

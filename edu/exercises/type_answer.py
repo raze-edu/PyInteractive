@@ -10,7 +10,9 @@ from ..theme import (
     CARD_BG,
     CARD_BORDER,
     TEXT_WHITE,
-    TEXT_MUTED
+    TEXT_MUTED,
+    render_math,
+    draw_math
 )
 from ..sound import sound_manager
 
@@ -144,8 +146,8 @@ class TypeAnswerExercise(BaseExercise):
         if len(parts) == 2:
             left_text = parts[0].strip()
             right_text = parts[1].strip()
-            left_surf = eq_font.render(left_text, True, TEXT_WHITE) if left_text else None
-            right_surf = eq_font.render(right_text, True, TEXT_WHITE) if right_text else None
+            left_surf = render_math(left_text, font_size=36, color=TEXT_WHITE, bold=True) if left_text else None
+            right_surf = render_math(right_text, font_size=36, color=TEXT_WHITE, bold=True) if right_text else None
             
             total_w = box_w + 20
             if left_surf:

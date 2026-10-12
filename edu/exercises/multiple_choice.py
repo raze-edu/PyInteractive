@@ -16,7 +16,9 @@ from ..theme import (
     CARD_SELECTED_BG,
     CARD_SELECTED_BORDER,
     TEXT_WHITE,
-    TEXT_MUTED
+    TEXT_MUTED,
+    draw_math,
+    render_math
 )
 from ..sound import sound_manager
 
@@ -58,7 +60,12 @@ class MultipleChoiceExercise(BaseExercise):
         return self.selected_index is not None
 
     def check(self) -> bool:
-        self.is_solved = (self.selected_index == self.correct_choice_index)
+        if self.selected_index is None:
+            self.is_solved = False
+            return False
+        correct_val = str(self.choices[self.correct_choice_index]).strip()
+        selected_val = str(self.choices[self.selected_index]).strip()
+        self.is_solved = (selected_val == correct_val) or (self.selected_index == self.correct_choice_index)
         return self.is_solved
 
     def get_feedback(self) -> Tuple[str, str]:
@@ -139,30 +146,28 @@ class MultipleChoiceExercise(BaseExercise):
         pygame.draw.polygon(screen, (32, 47, 54), pts)
         
         # Text
-        font = get_font(18)
         txt = self.character_speech
         if self.selected_index is not None:
             txt = txt.replace("_____", f" {self.choices[self.selected_index]} ")
-        txt_surf = font.render(txt, True, TEXT_WHITE)
-        screen.blit(txt_surf, txt_surf.get_rect(center=bubble_rect.center))
+        draw_math(screen, txt, bubble_rect, font_size=18, color=TEXT_WHITE, bold=True, align="center", max_width=bubble_w - 24)
         
         # Underline rule
         pygame.draw.line(screen, (32, 47, 54), (char_x, bubble_rect.bottom + 18), (char_x + 580, bubble_rect.bottom + 18), 2)
         return bubble_rect.bottom + 30
 
     def _draw_equation_prompt(self, screen: pygame.Surface, area_rect: pygame.Rect, start_y: int) -> int:
-        eq_font = get_font(38, bold=True)
         if "[ ]" in self.question_text:
             parts = self.question_text.split("[ ]")
             left_text = parts[0].strip()
             right_text = parts[1].strip()
             
             chosen_val = self.choices[self.selected_index] if self.selected_index is not None else ""
-            box_w = max(64, len(chosen_val) * 20 + 24)
-            box_h = 52
+            val_surf = render_math(chosen_val, font_size=32, color=ACCENT_BLUE, bold=True) if chosen_val else None
+            box_w = max(64, (val_surf.get_width() + 24) if val_surf else 64)
+            box_h = max(52, (val_surf.get_height() + 12) if val_surf else 52)
             
-            left_surf = eq_font.render(left_text, True, TEXT_WHITE) if left_text else None
-            right_surf = eq_font.render(right_text, True, TEXT_WHITE) if right_text else None
+            left_surf = render_math(left_text, font_size=36, color=TEXT_WHITE, bold=True) if left_text else None
+            right_surf = render_math(right_text, font_size=36, color=TEXT_WHITE, bold=True) if right_text else None
             
             total_w = box_w + 24
             if left_surf:
@@ -172,22 +177,20 @@ class MultipleChoiceExercise(BaseExercise):
                 
             cur_x = area_rect.centerx - total_w // 2
             if left_surf:
-                screen.blit(left_surf, (cur_x, start_y + 10))
+                screen.blit(left_surf, (cur_x, start_y + (box_h - left_surf.get_height()) // 2))
                 cur_x += left_surf.get_width() + 16
                 
-            box_rect = pygame.Rect(cur_x, start_y + 6, box_w, box_h)
+            box_rect = pygame.Rect(cur_x, start_y + 4, box_w, box_h)
             draw_rounded_rect(screen, box_rect, (24, 39, 46), radius=10, border_color=ACCENT_BLUE, border_width=2)
-            if chosen_val:
-                val_surf = eq_font.render(chosen_val, True, ACCENT_BLUE)
+            if val_surf:
                 screen.blit(val_surf, val_surf.get_rect(center=box_rect.center))
             cur_x += box_w + 16
             if right_surf:
-                screen.blit(right_surf, (cur_x, start_y + 10))
-            return start_y + 80
+                screen.blit(right_surf, (cur_x, start_y + (box_h - right_surf.get_height()) // 2))
+            return start_y + box_h + 30
         else:
-            q_surf = eq_font.render(self.question_text, True, TEXT_WHITE)
-            screen.blit(q_surf, q_surf.get_rect(center=(area_rect.centerx, start_y + 20)))
-            return start_y + 60
+            q_rect = draw_math(screen, self.question_text, (area_rect.centerx, start_y + 20), font_size=34, color=TEXT_WHITE, bold=True, align="center")
+            return q_rect.bottom + 30
 
     def _draw_grid_rectangle(self, screen: pygame.Surface, area_rect: pygame.Rect, start_y: int) -> int:
         cols = 10
@@ -290,8 +293,7 @@ class MultipleChoiceExercise(BaseExercise):
         for i, (v1, v2) in enumerate(rows):
             ry = trect.top + hdr_h + i * row_h
             pygame.draw.line(screen, CARD_BORDER, (trect.left, ry + row_h), (trect.right, ry + row_h), 1)
-            s1 = rfont.render(str(v1), True, TEXT_WHITE)
-            screen.blit(s1, (trect.left + tw // 4 - s1.get_width() // 2, ry + 7))
+            draw_math(screen, str(v1), (trect.left + tw // 4, ry + row_h // 2), font_size=18, color=TEXT_WHITE, bold=False, align="center")
 
             # If v2 is '?', render it inside a highlighted blue box
             if str(v2) == "?":
@@ -300,8 +302,7 @@ class MultipleChoiceExercise(BaseExercise):
                 qs = hfont.render("?", True, ACCENT_BLUE_LIGHT)
                 screen.blit(qs, qs.get_rect(center=qbox.center))
             else:
-                s2 = rfont.render(str(v2), True, TEXT_WHITE)
-                screen.blit(s2, (trect.left + 3 * tw // 4 - s2.get_width() // 2, ry + 7))
+                draw_math(screen, str(v2), (trect.left + 3 * tw // 4, ry + row_h // 2), font_size=18, color=TEXT_WHITE, bold=False, align="center")
 
         return trect.bottom + 20
 
@@ -373,7 +374,6 @@ class MultipleChoiceExercise(BaseExercise):
         btn_h = 48 if self.diagram_type else 52
         btn_gap = 10 if self.diagram_type else 12
         sx = area_rect.centerx - btn_w // 2
-        opt_font = get_font(22, bold=True)
 
         for i, opt in enumerate(self.choices):
             crect = pygame.Rect(sx, start_y + i * (btn_h + btn_gap), btn_w, btn_h)
@@ -385,5 +385,4 @@ class MultipleChoiceExercise(BaseExercise):
             border = CARD_SELECTED_BORDER if is_sel else ((53, 75, 87) if is_hov else CARD_BORDER)
             draw_rounded_rect(screen, crect, bg, radius=14, border_color=border, border_width=2)
 
-            txt_surf = opt_font.render(opt, True, TEXT_WHITE)
-            screen.blit(txt_surf, txt_surf.get_rect(center=crect.center))
+            draw_math(screen, opt, crect, font_size=22, color=TEXT_WHITE, bold=True, align="center")

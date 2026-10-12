@@ -68,6 +68,8 @@ class EduApp:
         self.calculator = CalculatorWidget()
         self.confetti = ConfettiSystem()
         self.generator_menu = GeneratorMenu()
+        # Start directly on the select/generator menu as requested
+        self.generator_menu.open()
 
         # Update initial progress
         self._sync_progress()
@@ -192,7 +194,7 @@ class EduApp:
 
         # 5. Header events (close / menu clicked)
         hdr_action = self.header.handle_event(event)
-        if hdr_action == "close":
+        if hdr_action in ("close", "menu"):
             self.generator_menu.open()
             return
 
